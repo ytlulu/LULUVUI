@@ -291,8 +291,10 @@ local function _mkDropdown(parent, mainFrame, label, options, default, yOff, cal
     valBtn.MouseButton1Click:Connect(function()
         open[1] = not open[1]
         if open[1] then
-            local absPos  = valBtn.AbsolutePosition
+            local absPos   = valBtn.AbsolutePosition
             local framePos = mainFrame.AbsolutePosition
+            local menuW    = valBtn.AbsoluteSize.X  -- ikut lebar tombol
+            dropMenu.Size  = UDim2.new(0, menuW, 0, #options * 28)
             dropMenu.Position = UDim2.new(0, absPos.X - framePos.X, 0,
                 absPos.Y - framePos.Y + valBtn.AbsoluteSize.Y + 4)
             dropMenu.Parent = mainFrame
@@ -481,8 +483,10 @@ local function _mkMultiDropdown(parent, mainFrame, label, options, defaults, yOf
     valBtn.MouseButton1Click:Connect(function()
         open[1] = not open[1]
         if open[1] then
-            local absPos  = valBtn.AbsolutePosition
+            local absPos   = valBtn.AbsolutePosition
             local framePos = mainFrame.AbsolutePosition
+            local menuW    = math.max(valBtn.AbsoluteSize.X, 150)  -- min 150
+            dropMenu.Size  = UDim2.new(0, menuW, 0, menuH)
             dropMenu.Position = UDim2.new(0, absPos.X - framePos.X, 0,
                 absPos.Y - framePos.Y + valBtn.AbsoluteSize.Y + 4)
             dropMenu.Parent = mainFrame
@@ -1695,15 +1699,20 @@ function LuluUI.new(cfg)
         sg:Destroy()
     end)
 
-    -- Lotus toggle
-    local normalSize = mainFrame.Size
+    -- Lotus toggle — simpan ukuran SAAT INI sebelum hide
+    -- supaya kalau udah di-resize, restore ke ukuran yang benar
     lotusBtn.MouseButton1Click:Connect(function()
-        mainFrame.Visible = not mainFrame.Visible
         if mainFrame.Visible then
+            -- Simpan ukuran terkini sebelum hide
+            self._savedSize = mainFrame.Size
+            mainFrame.Visible = false
+        else
+            mainFrame.Visible = true
+            local restoreSize = self._savedSize or mainFrame.Size
             mainFrame.Size = UDim2.new(0, 0, 0, 0)
             TweenService:Create(mainFrame,
                 TweenInfo.new(0.4, Enum.EasingStyle.Back, Enum.EasingDirection.Out),
-                {Size = normalSize}
+                {Size = restoreSize}
             ):Play()
         end
         TweenService:Create(lotusBtn, TweenInfo.new(0.3),
@@ -1789,13 +1798,13 @@ function Window:Draggable(frame, handle)
 end
 
 -- ============================================================
--- TAB SYSTEM
+-- TAB SYSTEM  (persistent frame per tab — tidak rebuild saat switch)
 -- ============================================================
 function Window:Tab(name)
     local theme  = self._theme
     local yOff   = self._tabY
 
-    -- Sidebar button
+    -- ── Sidebar button ────────────────────────────────────────
     local btn = Instance.new("TextButton")
     btn.Size = UDim2.new(1, -10, 0, 30)
     btn.Position = UDim2.new(0, 5, 0, yOff)
@@ -1812,8 +1821,23 @@ function Window:Tab(name)
 
     self._tabY = yOff + 36
 
-    -- Tab data
-    local tab = {name = name, btn = btn, _comps = {}}
+    -- ── Frame persisten khusus tab ini ────────────────────────
+    local frame = Instance.new("ScrollingFrame")
+    frame.Size = UDim2.new(1, -12, 1, -12)
+    frame.Position = UDim2.new(0, 6, 0, 6)
+    frame.BackgroundTransparency = 1
+    frame.BorderSizePixel = 0
+    frame.ScrollBarThickness = 4
+    frame.ScrollBarImageColor3 = theme.accent
+    frame.CanvasSize = UDim2.new(0, 0, 0, 0)
+    frame.Visible = false   -- hidden sampai diaktifkan
+    frame.Parent = self.rightPanel
+
+    -- ── Section langsung aktif, widget dibangun sekali ────────
+    local sec = Section.new(frame, self.mainFrame, theme, self._accordionStates)
+
+    -- ── Tab data ──────────────────────────────────────────────
+    local tab = {name = name, btn = btn, frame = frame, sec = sec}
     table.insert(self._tabs, tab)
     table.insert(self._tabBtns, btn)
 
@@ -1826,104 +1850,101 @@ function Window:Tab(name)
         self:_setActive(tab)
     end
 
-    -- Tab API (builder pattern)
-    local win = self
+    -- ── Tab API langsung delegasi ke Section ─────────────────
+    -- Widget dibangun langsung, tidak di-defer → state persistent
     local api = {}
 
-    local function push(fn)
-        table.insert(tab._comps, fn)
-        if win._activeTab == tab then
-            win:_rebuild()
+    function api:Label(text, opts)         sec:Label(text, opts)               end
+    function api:Divider(opts)             sec:Divider(opts)                   end
+    function api:Separator(text, opts)     sec:Separator(text, opts)           end
+    function api:Badge(text, opts)         sec:Badge(text, opts)               end
+    function api:Button(text, cb, opts)    sec:Button(text, cb, opts)          end
+    function api:HalfButtons(tA,tB,cA,cB,opts) sec:HalfButtons(tA,tB,cA,cB,opts) end
+    function api:Toggle(lbl,def,cb,opts)   sec:Toggle(lbl,def,cb,opts)         end
+    function api:Segment(lbl,opts_,def,cb,opts) sec:Segment(lbl,opts_,def,cb,opts) end
+    function api:Dropdown(lbl,opts_,def,cb,opts) sec:Dropdown(lbl,opts_,def,cb,opts) end
+    function api:MultiDropdown(lbl,opts_,defs,cb,opts) sec:MultiDropdown(lbl,opts_,defs,cb,opts) end
+    function api:NumberInput(lbl,def,step,mn,mx,cb,opts) sec:NumberInput(lbl,def,step,mn,mx,cb,opts) end
+    function api:Accordion(title,sk,bFn,opts) sec:Accordion(title,sk,bFn,opts) end
+    function api:Custom(fn)                sec:Custom(fn)                      end
+
+    -- Widget dengan return value: return langsung (tidak perlu proxy)
+    function api:TextInput(lbl,def,cb,opts)
+        local box = sec:TextInput(lbl,def,cb,opts)
+        sec:_updateCanvas()
+        return box
+    end
+    function api:List(lbl,opts)
+        local api_ = sec:List(lbl,opts)
+        sec:_updateCanvas()
+        return api_
+    end
+    function api:ProgressBar(lbl,initVal,opts)
+        local api_ = sec:ProgressBar(lbl,initVal,opts)
+        sec:_updateCanvas()
+        return api_
+    end
+    function api:CopyButton(lbl,val,opts)
+        local setter = sec:CopyButton(lbl,val,opts)
+        sec:_updateCanvas()
+        return setter
+    end
+
+    -- Update canvas setelah setiap call (auto)
+    local _orig_meta = getmetatable(api)
+    local _wrap = {}
+    setmetatable(api, {
+        __index = function(t, k)
+            local fn = _wrap[k]
+            if fn then return fn end
+            -- fallback
+            return rawget(t, k)
+        end
+    })
+
+    -- Karena widget langsung dibangun, update canvas setelah tiap call
+    -- Paksa via override sederhana pada api
+    local _autoUpdate = function(origFn)
+        return function(self_, ...)
+            origFn(self_, ...)
+            sec:_updateCanvas()
+        end
+    end
+    for k, fn in pairs(api) do
+        if type(fn) == "function" then
+            local orig = fn
+            api[k] = function(s, ...)
+                orig(s, ...)
+                sec:_updateCanvas()
+            end
         end
     end
 
-    function api:Label(text, opts)
-        push(function(sec) sec:Label(text, opts) end)
+    -- Tapi widget yang return value tidak boleh di-wrap ulang
+    -- Reregister yang return value:
+    function api:TextInput(lbl,def,cb,opts)
+        local box = sec:TextInput(lbl,def,cb,opts)
+        sec:_updateCanvas()
+        return box
     end
-    function api:Divider(opts)
-        push(function(sec) sec:Divider(opts) end)
+    function api:List(lbl,opts)
+        local a = sec:List(lbl,opts)
+        sec:_updateCanvas()
+        return a
     end
-    function api:Separator(text, opts)
-        push(function(sec) sec:Separator(text, opts) end)
+    function api:ProgressBar(lbl,initVal,opts)
+        local a = sec:ProgressBar(lbl,initVal,opts)
+        sec:_updateCanvas()
+        return a
     end
-    function api:Badge(text, opts)
-        push(function(sec) sec:Badge(text, opts) end)
+    function api:CopyButton(lbl,val,opts)
+        local s = sec:CopyButton(lbl,val,opts)
+        sec:_updateCanvas()
+        return s
     end
-
-    -- CopyButton: return setter proxy (update value dinamis)
-    function api:CopyButton(label, value, opts)
-        local ref = {_setter = nil}
-        push(function(sec) ref._setter = sec:CopyButton(label, value, opts) end)
-        return function(newVal)
-            if ref._setter then ref._setter(newVal) end
-        end
-    end
-
-    -- Button: support opts.confirm langsung (Fix 3)
-    function api:Button(text, cb, opts)
-        push(function(sec) sec:Button(text, cb, opts) end)
-    end
-
-    function api:HalfButtons(tA, tB, cbA, cbB, opts)
-        push(function(sec) sec:HalfButtons(tA, tB, cbA, cbB, opts) end)
-    end
-    function api:Toggle(label, default, cb, opts)
-        push(function(sec) sec:Toggle(label, default, cb, opts) end)
-    end
-    function api:Dropdown(label, options, default, cb, opts)
-        push(function(sec) sec:Dropdown(label, options, default, cb, opts) end)
-    end
-    function api:MultiDropdown(label, options, defaults, cb, opts)
-        push(function(sec) sec:MultiDropdown(label, options, defaults, cb, opts) end)
-    end
-    function api:NumberInput(label, default, step, minV, maxV, cb, opts)
-        push(function(sec) sec:NumberInput(label, default, step, minV, maxV, cb, opts) end)
-    end
-    function api:Segment(label, options, default, cb, opts)
-        push(function(sec) sec:Segment(label, options, default, cb, opts) end)
-    end
-
-    -- TextInput: return proxy → .Text selalu fresh tiap rebuild
-    function api:TextInput(label, default, cb, opts)
-        local ref = {_box = nil}
-        push(function(sec) ref._box = sec:TextInput(label, default, cb, opts) end)
-        return setmetatable({}, {
-            __index    = function(_, k)   if ref._box then return ref._box[k]    end end,
-            __newindex = function(_, k, v) if ref._box then ref._box[k] = v      end end,
-        })
-    end
-
-    -- List: return proxy → api selalu forward ke instance terbaru
-    function api:List(label, opts)
-        local ref = {_api = nil}
-        push(function(sec) ref._api = sec:List(label, opts) end)
-        return {
-            Add     = function(_, r)   if ref._api then ref._api:Add(r)       end end,
-            Remove  = function(_, i)   if ref._api then ref._api:Remove(i)    end end,
-            Clear   = function(_)      if ref._api then ref._api:Clear()       end end,
-            SetRows = function(_, t)   if ref._api then ref._api:SetRows(t)   end end,
-            Count   = function(_)      if ref._api then return ref._api:Count() end return 0 end,
-        }
-    end
-
-    -- ProgressBar: return proxy → :Set/:Get forward ke instance terbaru
-    function api:ProgressBar(label, initVal, opts)
-        local ref = {_api = nil}
-        push(function(sec) ref._api = sec:ProgressBar(label, initVal, opts) end)
-        return {
-            Set = function(_, v) if ref._api then ref._api:Set(v) end end,
-            Get = function(_)    if ref._api then return ref._api:Get() end return 0 end,
-        }
-    end
-
-    -- Accordion: signature baru tanpa innerH
-    function api:Accordion(title, stateKey, builderFn, opts)
-        push(function(sec) sec:Accordion(title, stateKey, builderFn, opts) end)
-    end
-
-    -- Escape hatch: fn(container, y, theme) → raw access
-    function api:Custom(fn)
-        push(function(sec) sec:Custom(fn) end)
+    function api:Accordion(title,sk,bFn,opts)
+        sec:Accordion(title,sk,bFn,opts)
+        sec:_updateCanvas()
     end
 
     return api
@@ -1931,6 +1952,7 @@ end
 
 function Window:_setActive(tab)
     local theme = self._theme
+    -- Update button styles
     for _, b in ipairs(self._tabBtns) do
         b.BackgroundColor3 = theme.sidebarBg
         b.BackgroundTransparency = 1
@@ -1939,18 +1961,15 @@ function Window:_setActive(tab)
     tab.btn.BackgroundColor3 = Color3.fromRGB(200, 180, 220)
     tab.btn.BackgroundTransparency = 0.3
     tab.btn.TextColor3 = Color3.fromRGB(40, 200, 80)
+    -- Hide semua frame, show yang aktif
+    for _, t in ipairs(self._tabs) do
+        t.frame.Visible = (t == tab)
+    end
     self._activeTab = tab
-    self:_rebuild()
 end
 
-function Window:_rebuild()
-    local tab = self._activeTab
-    if not tab then return end
-    for _, c in ipairs(self.container:GetChildren()) do c:Destroy() end
-    local sec = Section.new(self.container, self.mainFrame, self._theme, self._accordionStates)
-    for _, fn in ipairs(tab._comps) do fn(sec) end
-    sec:_updateCanvas()
-end
+-- _rebuild tidak dipakai lagi tapi tetap ada buat kompatibilitas
+function Window:_rebuild() end
 
 -- ============================================================
 -- TOAST NOTIFICATION
@@ -2073,7 +2092,7 @@ return LuluUI
 
 --[[
 ═══════════════════════════════════════════════════════════════
-  How To Use Lulu-Ui
+  CONTOH PENGGUNAAN
 ═══════════════════════════════════════════════════════════════
 
 local LuluUI = loadstring(game:HttpGet("URL_KE_FILE_INI"))()
