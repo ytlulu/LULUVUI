@@ -1996,140 +1996,191 @@ function LuluUI.new(cfg)
     end)
 
     -- ── Loading Screen ───────────────────────────────────────
-    -- Gaya Dex++: gradient sweep masuk/keluar, teks slide dari kiri
+    -- Gaya Dex++: gradient sweep reveal, holder wipe, teks slide, close wipe
     task.spawn(function()
         local playerName = Players.LocalPlayer and Players.LocalPlayer.Name or "Player"
+        local scriptName = cfg.title or "Script"
 
         -- ── ScreenGui terpisah khusus loading ───────────────
         local loadSg = Instance.new("ScreenGui")
-        loadSg.Name = "LuluUI_Loading"
+        loadSg.Name        = "LuluUI_Loading"
         loadSg.ResetOnSpawn = false
         loadSg.IgnoreGuiInset = true
         loadSg.DisplayOrder = 9999
         loadSg.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
         loadSg.Parent = guiParent
 
-        -- ── Warna fix, tidak ikut tema ───────────────────────
-        local LC = {
-            box     = Color3.fromRGB(22,  18,  38),   -- kotak dalam
-            title   = Color3.fromRGB(255, 255, 255),  -- putih
-            desc    = Color3.fromRGB(200, 200, 200),  -- abu terang
-            status  = Color3.fromRGB(180, 180, 180),  -- abu status
-            track   = Color3.fromRGB(40,  32,  60),   -- track bar
-            bar     = Color3.fromRGB(130, 70,  230),  -- bar ungu
-            barEnd  = Color3.fromRGB(200, 150, 255),  -- bar ujung lavender
-            success = Color3.fromRGB(80,  215, 115),  -- hijau sukses
-        }
-
-        -- ── Helper: tweenNumber (seperti Dex++) ─────────────
-        -- Animate nilai 0→n tiap frame, panggil callback(val)
-        local function tweenNumber(n, ti, callback)
-            local v = Instance.new("IntValue")
-            v.Value = 0
-            v.Changed:Connect(callback)
-            local tw = TweenService:Create(v, ti, {Value = n})
-            tw:Play()
-            tw.Completed:Connect(function() v:Destroy() end)
-            return tw
+        -- ── Helper tweenNumber persis Dex++ ─────────────────
+        local tweenS = TweenService
+        local function tweenNumber(n, ti, func)
+            local tweenVal = Instance.new("IntValue")
+            tweenVal.Value = 0
+            tweenVal.Changed:Connect(func)
+            local tween = tweenS:Create(tweenVal, ti, {Value = n})
+            tween:Play()
+            tween.Completed:Connect(function() tweenVal:Destroy() end)
+            return tween
         end
 
-        -- ── Buat kotak utama ─────────────────────────────────
-        -- Rasio 3:1 (lebar:tinggi), 360x120
-        local BOX_W, BOX_H = 360, 120
+        -- ── Main Frame (350x200, di tengah layar) ────────────
+        local main = Instance.new("Frame")
+        main.Name                = "Main"
+        main.Size                = UDim2.new(0, 350, 0, 200)
+        main.Position            = UDim2.new(0.5, -175, 0.5, -100)
+        main.BackgroundColor3    = Color3.fromRGB(52, 52, 52)
+        main.BorderSizePixel     = 0
+        main.Active              = true
+        main.ZIndex              = 901
+        main.Parent              = loadSg
 
-        -- Kotak tengah — langsung ke loadSg, tidak ada background fullscreen
-        local box = Instance.new("Frame")
-        box.AnchorPoint = Vector2.new(0.5, 0.5)
-        box.Size = UDim2.new(0, BOX_W, 0, BOX_H)
-        box.Position = UDim2.new(0.5, 0, 0.5, 0)
-        box.BackgroundColor3 = LC.box
-        box.BorderSizePixel = 0
-        box.ClipsDescendants = true
-        box.ZIndex = 901
-        box.Parent = loadSg
-        mkCorner(box, 10)
-
-        -- UIGradient di kotak untuk wipe reveal konten
-        local boxGrad = Instance.new("UIGradient")
-        boxGrad.Transparency = NumberSequence.new({
+        -- backGradient di Main (sweep reveal dari tengah)
+        local backGradient = Instance.new("UIGradient")
+        backGradient.Rotation    = -30
+        backGradient.Transparency = NumberSequence.new({
             NumberSequenceKeypoint.new(0, 1),
             NumberSequenceKeypoint.new(1, 1),
         })
-        boxGrad.Parent = box
+        backGradient.Parent = main
 
-        -- UIStroke border
-        local stroke = Instance.new("UIStroke")
-        stroke.Color = Color3.fromRGB(80, 45, 160)
-        stroke.Thickness = 1
-        stroke.Parent = box
+        -- ── Outline ImageLabel (border efek) ─────────────────
+        local outlines = Instance.new("Frame")
+        outlines.Name             = "Outlines"
+        outlines.Size             = UDim2.new(1, 10, 1, 10)
+        outlines.Position         = UDim2.new(0, -5, 0, -5)
+        outlines.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+        outlines.BackgroundTransparency = 1
+        outlines.BorderSizePixel  = 0
+        outlines.ZIndex           = 900
+        outlines.Parent           = main
+        mkCorner(outlines, 6)
 
-        -- ── Judul: "Loading Script" ──────────────────────────
-        -- Mulai offscreen kiri (seperti Dex++ title slide in)
-        local titleLbl = Instance.new("TextLabel")
-        titleLbl.Size = UDim2.new(0, 160, 0, 36)
-        titleLbl.Position = UDim2.new(0, -170, 0, 12)   -- offscreen kiri
-        titleLbl.BackgroundTransparency = 1
-        titleLbl.Text = "Loading Script"
-        titleLbl.Font = Enum.Font.GothamBold
-        titleLbl.TextSize = 20
-        titleLbl.TextColor3 = LC.title
-        titleLbl.TextXAlignment = Enum.TextXAlignment.Left
-        titleLbl.TextTransparency = 1
-        titleLbl.ZIndex = 902
-        titleLbl.Parent = box
-
-        -- ── Desc: "Beautiful UI by Lulu_Attack" ─────────────
-        local descLbl = Instance.new("TextLabel")
-        descLbl.Size = UDim2.new(0, 220, 0, 20)
-        descLbl.Position = UDim2.new(0, -230, 0, 50)    -- offscreen kiri
-        descLbl.BackgroundTransparency = 1
-        descLbl.Text = "Beautiful UI by Lulu_Attack"
-        descLbl.Font = Enum.Font.Gotham
-        descLbl.TextSize = 13
-        descLbl.TextColor3 = LC.desc
-        descLbl.TextXAlignment = Enum.TextXAlignment.Left
-        descLbl.TextTransparency = 1
-        descLbl.ZIndex = 902
-        descLbl.Parent = box
-
-        -- ── Status text ──────────────────────────────────────
-        local statusLbl = Instance.new("TextLabel")
-        statusLbl.Size = UDim2.new(0, 200, 0, 18)
-        statusLbl.Position = UDim2.new(0, 20, 0, 130)   -- mulai di bawah (belum kelihatan)
-        statusLbl.BackgroundTransparency = 1
-        statusLbl.Text = "Loading..."
-        statusLbl.Font = Enum.Font.Gotham
-        statusLbl.TextSize = 12
-        statusLbl.TextColor3 = LC.status
-        statusLbl.TextXAlignment = Enum.TextXAlignment.Left
-        statusLbl.TextTransparency = 1
-        statusLbl.ZIndex = 902
-        statusLbl.Parent = box
-
-        -- ── Progress bar (mulai kecil di tengah, lebar 0) ────
-        local progTrack = Instance.new("Frame")
-        progTrack.Size = UDim2.new(0, 0, 0, 4)
-        progTrack.Position = UDim2.new(0, 110, 0, 95)   -- awalnya width=0, di tengah
-        progTrack.BackgroundColor3 = LC.track
-        progTrack.BorderSizePixel = 0
-        progTrack.ZIndex = 902
-        progTrack.Parent = box
-        mkCorner(progTrack, 2)
-
-        local progFill = Instance.new("Frame")
-        progFill.Size = UDim2.new(0, 0, 1, 0)
-        progFill.BackgroundColor3 = LC.bar
-        progFill.BorderSizePixel = 0
-        progFill.ZIndex = 903
-        progFill.Parent = progTrack
-        mkCorner(progFill, 2)
-
-        local glBar = Instance.new("UIGradient")
-        glBar.Color = ColorSequence.new({
-            ColorSequenceKeypoint.new(0, LC.bar),
-            ColorSequenceKeypoint.new(1, LC.barEnd),
+        local outlinesGradient = Instance.new("UIGradient")
+        outlinesGradient.Rotation    = -30
+        outlinesGradient.Transparency = NumberSequence.new({
+            NumberSequenceKeypoint.new(0, 1),
+            NumberSequenceKeypoint.new(1, 1),
         })
-        glBar.Parent = progFill
+        outlinesGradient.Parent = outlines
+
+        -- UIStroke sebagai border
+        local stroke = Instance.new("UIStroke")
+        stroke.Color       = Color3.fromRGB(100, 60, 200)
+        stroke.Thickness   = 1.5
+        stroke.Transparency = 1
+        stroke.Parent       = outlines
+
+        -- ── Holder (ClipsDescendants = true) ─────────────────
+        local holder = Instance.new("Frame")
+        holder.Name              = "Holder"
+        holder.Size              = UDim2.new(1, 0, 1, 0)
+        holder.BackgroundColor3  = Color3.fromRGB(45, 45, 45)
+        holder.BorderSizePixel   = 0
+        holder.ClipsDescendants  = true   -- ← batas clip konten
+        holder.ZIndex            = 902
+        holder.Parent            = main
+        mkCorner(main, 8)
+        mkCorner(holder, 8)
+
+        -- holderGradient (wipe kiri→kanan untuk reveal & close)
+        local holderGradient = Instance.new("UIGradient")
+        holderGradient.Transparency = NumberSequence.new({
+            NumberSequenceKeypoint.new(0, 1),
+            NumberSequenceKeypoint.new(1, 1),
+        })
+        holderGradient.Parent = holder
+
+        -- ── Title: "Loading Script" ───────────────────────────
+        local titleText = Instance.new("TextLabel")
+        titleText.Name               = "Title"
+        titleText.Size               = UDim2.new(0, 160, 0, 50)
+        titleText.Position           = UDim2.new(0, -190, 0, 15)  -- offscreen kiri
+        titleText.BackgroundTransparency = 1
+        titleText.Text               = "Loading Script"
+        titleText.Font               = Enum.Font.GothamBold
+        titleText.TextSize           = 26
+        titleText.TextColor3         = Color3.fromRGB(255, 255, 255)
+        titleText.TextTransparency   = 1
+        titleText.TextXAlignment     = Enum.TextXAlignment.Left
+        titleText.ZIndex             = 903
+        titleText.Parent             = holder
+
+        -- ── Desc: "Beautiful UI by Lulu_Attack" ──────────────
+        local descText = Instance.new("TextLabel")
+        descText.Name                = "Desc"
+        descText.Size                = UDim2.new(0, 220, 0, 25)
+        descText.Position            = UDim2.new(0, -230, 0, 62)  -- offscreen kiri
+        descText.BackgroundTransparency = 1
+        descText.Text                = "Beautiful UI v1.1"
+        descText.Font                = Enum.Font.Gotham
+        descText.TextSize            = 14
+        descText.TextColor3          = Color3.fromRGB(220, 220, 220)
+        descText.TextTransparency    = 1
+        descText.TextXAlignment      = Enum.TextXAlignment.Left
+        descText.ZIndex              = 903
+        descText.Parent              = holder
+
+        -- ── Status Text ──────────────────────────────────────
+        local statusText = Instance.new("TextLabel")
+        statusText.Name              = "StatusText"
+        statusText.Size              = UDim2.new(0, 200, 0, 25)
+        statusText.Position          = UDim2.new(0, 20, 0, 110)
+        statusText.BackgroundTransparency = 1
+        statusText.Text              = "Loading..."
+        statusText.Font              = Enum.Font.Gotham
+        statusText.TextSize          = 13
+        statusText.TextColor3        = Color3.fromRGB(200, 200, 200)
+        statusText.TextTransparency  = 1
+        statusText.TextXAlignment    = Enum.TextXAlignment.Left
+        statusText.ZIndex            = 903
+        statusText.Parent            = holder
+
+        -- ── Progress Bar ─────────────────────────────────────
+        local progressBar = Instance.new("Frame")
+        progressBar.Name             = "ProgressBar"
+        progressBar.Size             = UDim2.new(0, 0, 0, 4)
+        progressBar.Position         = UDim2.new(0, 110, 0, 148)
+        progressBar.BackgroundColor3 = Color3.fromRGB(52, 52, 52)
+        progressBar.BorderSizePixel  = 0
+        progressBar.ZIndex           = 903
+        progressBar.Parent           = holder
+        mkCorner(progressBar, 2)
+
+        local bar = Instance.new("Frame")
+        bar.Name             = "Bar"
+        bar.Size             = UDim2.new(0, 0, 1, 0)
+        bar.BackgroundColor3 = Color3.fromRGB(120, 60, 220)
+        bar.BorderSizePixel  = 0
+        bar.ZIndex           = 904
+        bar.Parent           = progressBar
+        mkCorner(bar, 2)
+
+        local barGrad = Instance.new("UIGradient")
+        barGrad.Color = ColorSequence.new({
+            ColorSequenceKeypoint.new(0, Color3.fromRGB(100, 40, 200)),
+            ColorSequenceKeypoint.new(1, Color3.fromRGB(190, 130, 255)),
+        })
+        barGrad.Parent = bar
+
+        -- ── Creator (kanan bawah) — satu-satunya teks kanan ──
+        local creatorText = Instance.new("TextLabel")
+        creatorText.Name             = "Creator"
+        creatorText.Size             = UDim2.new(0, 105, 0, 20)
+        creatorText.Position         = UDim2.new(1, -110, 1, -20)
+        creatorText.BackgroundTransparency = 1
+        creatorText.Text             = "by Lulu_Attack"
+        creatorText.Font             = Enum.Font.Gotham
+        creatorText.TextSize         = 12
+        creatorText.TextColor3       = Color3.fromRGB(255, 255, 255)
+        creatorText.TextXAlignment   = Enum.TextXAlignment.Right
+        creatorText.ZIndex           = 903
+        creatorText.Parent           = main
+
+        local creatorGradient = Instance.new("UIGradient")
+        creatorGradient.Transparency = NumberSequence.new({
+            NumberSequenceKeypoint.new(0, 1),
+            NumberSequenceKeypoint.new(1, 1),
+        })
+        creatorGradient.Parent = creatorText
 
         -- ── safeFinish ───────────────────────────────────────
         local function safeFinish()
@@ -2148,86 +2199,119 @@ function LuluUI.new(cfg)
 
         local ok, err = pcall(function()
 
-        local ti = TweenInfo.new(0.4, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+        local ti         = TweenInfo.new(0.4, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+        local progressTI = TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
 
-        -- ── FASE 1: Box konten wipe reveal dari kiri → kanan ──
-        -- Background diam, yang animasi HANYA isi kotak
-        task.wait(0.15)
+        -- ── FASE 1: backGradient + outlinesGradient sweep reveal ──
+        -- Persis Dex++: sweep dari tengah keluar (val/200)
+        tweenNumber(100, ti, function(val)
+            val = val / 200
+            local s  = NumberSequenceKeypoint.new(0, 0)
+            local a1 = NumberSequenceKeypoint.new(val, 0)
+            local a2 = NumberSequenceKeypoint.new(math.min(0.5, val + math.min(0.05, val)), 1)
+            if a1.Time == a2.Time then a2 = a1 end
+            local b2 = NumberSequenceKeypoint.new(math.max(0.5, 1 - val - math.min(0.05, val)), 1)
+            local b1 = NumberSequenceKeypoint.new(1 - val, 0)
+            if b1.Time == b2.Time then b2 = b1 end
+            local g  = NumberSequenceKeypoint.new(1, 0)
+            backGradient.Transparency    = NumberSequence.new({s, a1, a2, b2, b1, g})
+            outlinesGradient.Transparency = NumberSequence.new({s, a1, a2, b2, b1, g})
+            stroke.Transparency = 1 - val * 2
+        end)
+        task.wait(0.4)
+
+        -- ── FASE 2: holderGradient wipe kiri→kanan ───────────
+        -- + title slide in + desc slide in + rightText fade in
         tweenNumber(100, ti, function(val)
             val = val / 166.66
             local s  = NumberSequenceKeypoint.new(0, 0)
             local a1 = NumberSequenceKeypoint.new(val, 0)
             local a2 = NumberSequenceKeypoint.new(math.min(1, val + 0.01), 1)
             local g  = NumberSequenceKeypoint.new(1, 1)
-            boxGrad.Transparency = NumberSequence.new({s, a1, a2, g})
+            holderGradient.Transparency = NumberSequence.new({s, a1, a2, g})
         end)
 
-        -- Teks slide masuk dari kiri bersamaan dengan wipe
-        TweenService:Create(titleLbl, ti, {
-            Position = UDim2.new(0, 20, 0, 12),
-            TextTransparency = 0
+        -- Title slide dari x=-190 ke x=20 + fade in
+        tweenS:Create(titleText, ti, {
+            Position = UDim2.new(0, 20, 0, 15),
+            TextTransparency = 0,
         }):Play()
-        TweenService:Create(descLbl, ti, {
-            Position = UDim2.new(0, 20, 0, 50),
-            TextTransparency = 0
-        }):Play()
-        task.wait(0.45)
 
-        -- ── FASE 3: Progress bar & status muncul ─────────────
-        local progTI = TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
-        TweenService:Create(statusLbl, progTI, {
-            Position = UDim2.new(0, 20, 0, 90),
-            TextTransparency = 0
+        -- Desc slide dari x=-230 ke x=20 + fade in
+        tweenS:Create(descText, ti, {
+            Position = UDim2.new(0, 20, 0, 62),
+            TextTransparency = 0,
         }):Play()
-        TweenService:Create(progTrack, progTI, {
-            Position = UDim2.new(0, 20, 0, 100),
-            Size = UDim2.new(0, 320, 0, 4)
-        }):Play()
-        task.wait(0.3)
 
-        -- ── FASE 4: Bar jalan ────────────────────────────────
-        local steps = {10, 25, 40, 55, 70, 82, 91, 100}
-        for _, pct in ipairs(steps) do
-            local tw = TweenService:Create(progFill,
-                TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
-                {Size = UDim2.new(pct / 100, 0, 1, 0)}
-            )
-            tw:Play()
-            tw.Completed:Wait()
-            task.wait(math.random(8, 22) / 100)
+        -- Version & Creator fade in dari kanan (rightTextTransparency)
+        local function rightTextTransparency(obj)
+            tweenNumber(100, ti, function(val)
+                val = val / 100
+                local a1 = NumberSequenceKeypoint.new(1 - val, 0)
+                local a2 = NumberSequenceKeypoint.new(math.max(0, 1 - val - 0.01), 1)
+                if a1.Time == a2.Time then a2 = a1 end
+                local s  = NumberSequenceKeypoint.new(0, a1 == a2 and 0 or 1)
+                local g  = NumberSequenceKeypoint.new(1, 0)
+                obj.Transparency = NumberSequence.new({s, a2, a1, g})
+            end)
         end
+        rightTextTransparency(creatorGradient)
+
+        task.wait(0.9)
+
+        -- ── FASE 3: Status + ProgressBar muncul ─────────────
+        tweenS:Create(statusText, progressTI, {
+            Position = UDim2.new(0, 20, 0, 120),
+            TextTransparency = 0,
+        }):Play()
+        tweenS:Create(progressBar, progressTI, {
+            Position = UDim2.new(0, 20, 0, 148),
+            Size     = UDim2.new(0, 310, 0, 4),
+        }):Play()
         task.wait(0.3)
 
-        -- ── FASE 5: Fade semua konten, switch success ────────
-        TweenService:Create(titleLbl,  progTI, {TextTransparency = 1}):Play()
-        TweenService:Create(descLbl,   progTI, {TextTransparency = 1}):Play()
-        TweenService:Create(statusLbl, progTI, {TextTransparency = 1}):Play()
-        TweenService:Create(progTrack, progTI, {BackgroundTransparency = 1}):Play()
-        TweenService:Create(progFill,  progTI, {BackgroundTransparency = 1}):Play()
+        -- ── FASE 4: Progress bar jalan ────────────────────────
+        -- Status cukup "Loading..." sampai selesai → "Done"
+        statusText.Text = "Loading..."
+        local tw100 = tweenS:Create(bar, TweenInfo.new(1.8, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+            {Size = UDim2.new(1, 0, 1, 0)}
+        )
+        tw100:Play()
+        tw100.Completed:Wait()
+        statusText.Text = "Done"
+        task.wait(0.4)
+
+        -- ── FASE 5: Ganti semua teks → Welcome / Name / Script ──
+        tweenS:Create(titleText,  progressTI, {TextTransparency = 1}):Play()
+        tweenS:Create(descText,   progressTI, {TextTransparency = 1}):Play()
+        tweenS:Create(statusText, progressTI, {TextTransparency = 1}):Play()
+        tweenS:Create(progressBar,progressTI, {BackgroundTransparency = 1}):Play()
+        tweenS:Create(bar,        progressTI, {BackgroundTransparency = 1}):Play()
         task.wait(0.3)
 
-        titleLbl.Text = "Loading Success"
-        titleLbl.TextColor3 = LC.success
-        titleLbl.Position = UDim2.new(0, 20, 0, 30)
-        titleLbl.Size = UDim2.new(0, 320, 0, 30)
-        titleLbl.TextXAlignment = Enum.TextXAlignment.Center
-        TweenService:Create(titleLbl, progTI, {TextTransparency = 0}):Play()
+        -- Welcome
+        titleText.Text         = "Welcome"
+        titleText.TextColor3   = Color3.fromRGB(80, 215, 115)
+        tweenS:Create(titleText, progressTI, {TextTransparency = 0}):Play()
         task.wait(0.15)
 
-        descLbl.Text = "Welcome, " .. playerName
-        descLbl.TextColor3 = Color3.fromRGB(255, 255, 255)
-        descLbl.Position = UDim2.new(0, 20, 0, 65)
-        descLbl.Size = UDim2.new(0, 320, 0, 20)
-        descLbl.TextXAlignment = Enum.TextXAlignment.Center
-        TweenService:Create(descLbl, progTI, {TextTransparency = 0}):Play()
+        descText.Text          = playerName
+        descText.TextColor3    = Color3.fromRGB(255, 255, 255)
+        tweenS:Create(descText, progressTI, {TextTransparency = 0}):Play()
+        task.wait(0.15)
+
+        statusText.Text        = "Script : " .. scriptName
+        statusText.TextColor3  = Color3.fromRGB(195, 140, 255)
+        tweenS:Create(statusText, progressTI, {TextTransparency = 0}):Play()
         task.wait(1.0)
 
-        -- ── FASE 6: Close — kotak wipe keluar ────────────────
-        TweenService:Create(titleLbl, progTI, {TextTransparency = 1}):Play()
-        TweenService:Create(descLbl,  progTI, {TextTransparency = 1}):Play()
-        task.wait(0.28)
+        -- ── FASE 6: close() persis Dex++ ─────────────────────
+        tweenS:Create(titleText,   progressTI, {TextTransparency = 1}):Play()
+        tweenS:Create(descText,    progressTI, {TextTransparency = 1}):Play()
+        tweenS:Create(creatorText, progressTI, {TextTransparency = 1}):Play()
+        tweenS:Create(statusText,  progressTI, {TextTransparency = 1}):Play()
 
-        -- Wipe kotak dari tengah ke kanan (Dex++ close style)
+        -- holderGradient wipe dari tengah ke kanan (Back easing)
         tweenNumber(100, TweenInfo.new(0.4, Enum.EasingStyle.Back, Enum.EasingDirection.In), function(val)
             val = val / 250
             local s  = NumberSequenceKeypoint.new(0, 0)
@@ -2235,7 +2319,23 @@ function LuluUI.new(cfg)
             local a2 = NumberSequenceKeypoint.new(math.min(1, 0.601 + val), 1)
             if a1.Time == a2.Time then a2 = a1 end
             local g  = NumberSequenceKeypoint.new(1, a1 == a2 and 0 or 1)
-            boxGrad.Transparency = NumberSequence.new({s, a1, a2, g})
+            holderGradient.Transparency = NumberSequence.new({s, a1, a2, g})
+        end)
+        task.wait(0.5)
+
+        -- Background main hilang, outline sweep keluar
+        main.BackgroundTransparency = 1
+        outlinesGradient.Rotation = 30
+
+        tweenNumber(100, ti, function(val)
+            val = val / 100
+            local s  = NumberSequenceKeypoint.new(0, 1)
+            local a1 = NumberSequenceKeypoint.new(val, 1)
+            local a2 = NumberSequenceKeypoint.new(math.min(1, val + math.min(0.05, val)), 0)
+            if a1.Time == a2.Time then a2 = a1 end
+            local g  = NumberSequenceKeypoint.new(1, a1 == a2 and 1 or 0)
+            outlinesGradient.Transparency = NumberSequence.new({s, a1, a2, g})
+            holderGradient.Transparency   = NumberSequence.new({s, a1, a2, g})
         end)
         task.wait(0.45)
 
