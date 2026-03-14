@@ -1,5 +1,5 @@
 -- ============================================================
---   LuluUI Library v1.0
+--   LuluUI Library v1.2
 --   Pure UI Library | No game logic
 --   Usage: local LuluUI = loadstring(game:HttpGet("URL"))()
 -- ============================================================
@@ -455,8 +455,12 @@ local function _mkToggle(parent, label, yOff, default, callback, theme, opts)
 end
 
 -- Dropdown
+-- Return: bg, 32, proxy
+-- proxy:SetOptions(newOpts, keepValue?)  → update opsi tanpa rebuild widget
+-- proxy:SetValue(text)                  → set label tombol secara manual
 local function _mkDropdown(parent, mainFrame, label, options, default, yOff, callback, theme)
-    local open = {false}
+    local open        = {false}
+    local currentOpts = options   -- upvalue mutable — proxy.SetOptions akan update ini
 
     local bg = Instance.new("Frame")
     bg.Size = UDim2.new(1, -16, 0, 32)
@@ -495,7 +499,6 @@ local function _mkDropdown(parent, mainFrame, label, options, default, yOff, cal
     mkCorner(valBtn, 6)
 
     local dropMenu = Instance.new("Frame")
-    dropMenu.Size = UDim2.new(0, 100, 0, #options * 28)
     dropMenu.BackgroundColor3 = theme.textWhite
     dropMenu.BorderSizePixel = 0
     dropMenu.Visible = false
@@ -512,35 +515,43 @@ local function _mkDropdown(parent, mainFrame, label, options, default, yOff, cal
     ds.Parent = dropMenu
     mkCorner(ds, 10)
 
-    for i, opt in ipairs(options) do
-        local ob = Instance.new("TextButton")
-        ob.Size = UDim2.new(1, 0, 0, 28)
-        ob.Position = UDim2.new(0, 0, 0, (i - 1) * 28)
-        ob.BackgroundTransparency = 1
-        ob.Text = opt
-        ob.Font = Enum.Font.Gotham
-        ob.TextSize = 12
-        ob.TextColor3 = theme.text
-        ob.ZIndex = 201
-        ob.Parent = dropMenu
-        makeHover(ob, theme.textWhite, Color3.fromRGB(235, 240, 255))
-        ob.BackgroundTransparency = 1
-        ob.MouseButton1Click:Connect(function()
-            valBtn.Text = opt .. " ▾"
-            dropMenu.Visible = false
-            dropMenu.Parent = nil
-            open[1] = false
-            if callback then callback(opt) end
-        end)
+    -- ── rebuildMenu: hapus tombol lama, buat ulang dari opts ─────
+    local function rebuildMenu(opts)
+        for _, c in ipairs(dropMenu:GetChildren()) do
+            if c:IsA("TextButton") then c:Destroy() end
+        end
+        for i, opt in ipairs(opts) do
+            local ob = Instance.new("TextButton")
+            ob.Size = UDim2.new(1, 0, 0, 28)
+            ob.Position = UDim2.new(0, 0, 0, (i - 1) * 28)
+            ob.BackgroundTransparency = 1
+            ob.Text = opt
+            ob.Font = Enum.Font.Gotham
+            ob.TextSize = 12
+            ob.TextColor3 = theme.text
+            ob.ZIndex = 201
+            ob.Parent = dropMenu
+            makeHover(ob, theme.textWhite, Color3.fromRGB(235, 240, 255))
+            ob.BackgroundTransparency = 1
+            ob.MouseButton1Click:Connect(function()
+                valBtn.Text = opt .. " ▾"
+                dropMenu.Visible = false
+                dropMenu.Parent = nil
+                open[1] = false
+                if callback then callback(opt) end
+            end)
+        end
     end
+
+    rebuildMenu(currentOpts)
 
     valBtn.MouseButton1Click:Connect(function()
         open[1] = not open[1]
         if open[1] then
             local absPos   = valBtn.AbsolutePosition
             local framePos = mainFrame.AbsolutePosition
-            local menuW    = valBtn.AbsoluteSize.X  -- ikut lebar tombol
-            dropMenu.Size  = UDim2.new(0, menuW, 0, #options * 28)
+            local menuW    = valBtn.AbsoluteSize.X
+            dropMenu.Size  = UDim2.new(0, menuW, 0, #currentOpts * 28)
             dropMenu.Position = UDim2.new(0, absPos.X - framePos.X, 0,
                 absPos.Y - framePos.Y + valBtn.AbsoluteSize.Y + 4)
             dropMenu.Parent = mainFrame
@@ -551,7 +562,33 @@ local function _mkDropdown(parent, mainFrame, label, options, default, yOff, cal
         end
     end)
 
-    return bg, 32
+    -- ── Proxy API ────────────────────────────────────────────────
+    -- proxy:SetOptions(newOpts, keepValue?)
+    --   newOpts   = tabel string opsi baru
+    --   keepValue = true → jangan reset label tombol (default: false → reset ke opsi pertama)
+    -- proxy:SetValue(text)
+    --   paksa set teks label tombol dari luar
+    local proxy = {}
+
+    function proxy:SetOptions(newOpts, keepValue)
+        -- tutup menu kalau sedang terbuka
+        if open[1] then
+            dropMenu.Visible = false
+            dropMenu.Parent  = nil
+            open[1] = false
+        end
+        currentOpts = newOpts
+        rebuildMenu(newOpts)
+        if not keepValue then
+            valBtn.Text = (newOpts[1] or "—") .. " ▾"
+        end
+    end
+
+    function proxy:SetValue(text)
+        valBtn.Text = text .. " ▾"
+    end
+
+    return bg, 32, proxy
 end
 
 -- Multi-select Dropdown
@@ -1648,8 +1685,9 @@ end
 
 function Section:Dropdown(label, options, default, callback, opts)
     opts = opts or {}
-    _mkDropdown(self._c, self._mf, label, options, default, self._y, callback, self._t)
+    local _, _, proxy = _mkDropdown(self._c, self._mf, label, options, default, self._y, callback, self._t)
     self._y = self._y + 32 + (opts.gap or DEFAULT_GAP)
+    return proxy
 end
 
 -- Multi-select dropdown
@@ -2126,7 +2164,7 @@ function LuluUI.new(cfg)
         descText.Size                = UDim2.new(0, 220, 0, 25)
         descText.Position            = UDim2.new(0, -230, 0, 62)  -- offscreen kiri
         descText.BackgroundTransparency = 1
-        descText.Text                = "Beautiful UI v1.1"
+        descText.Text                = "Beautiful UI v1.2"
         descText.Font                = Enum.Font.Gotham
         descText.TextSize            = 14
         descText.TextColor3          = Color3.fromRGB(220, 220, 220)
@@ -2495,7 +2533,7 @@ function Window:Tab(name)
     function api:HalfButtons(tA,tB,cA,cB,opts) sec:HalfButtons(tA,tB,cA,cB,opts) end
     function api:Toggle(lbl,def,cb,opts)   sec:Toggle(lbl,def,cb,opts)         end
     function api:Segment(lbl,opts_,def,cb,opts) sec:Segment(lbl,opts_,def,cb,opts) end
-    function api:Dropdown(lbl,opts_,def,cb,opts) sec:Dropdown(lbl,opts_,def,cb,opts) end
+    function api:Dropdown(lbl,opts_,def,cb,opts) return sec:Dropdown(lbl,opts_,def,cb,opts) end
     function api:MultiDropdown(lbl,opts_,defs,cb,opts) sec:MultiDropdown(lbl,opts_,defs,cb,opts) end
     function api:NumberInput(lbl,def,step,mn,mx,cb,opts) sec:NumberInput(lbl,def,step,mn,mx,cb,opts) end
     function api:Accordion(title,skOrFn,bFnOrOpts,opts) sec:Accordion(title,skOrFn,bFnOrOpts,opts) end
@@ -2578,6 +2616,14 @@ function Window:Tab(name)
     function api:Accordion(title,sk,bFn,opts)
         sec:Accordion(title,sk,bFn,opts)
         sec:_updateCanvas()
+    end
+
+    -- Dropdown return proxy — harus di-register ulang setelah loop _autoUpdate
+    -- supaya return value tidak hilang ditelan wrapper
+    function api:Dropdown(lbl,opts_,def,cb,opts)
+        local proxy = sec:Dropdown(lbl,opts_,def,cb,opts)
+        sec:_updateCanvas()
+        return proxy
     end
 
     return api
