@@ -1,0 +1,2209 @@
+-- ============================================================
+--   LuluUI Library v1.0
+--   Pure UI Library | No game logic
+--   Usage: local LuluUI = loadstring(game:HttpGet("URL"))()
+-- ============================================================
+
+local LuluUI = {}
+LuluUI.__index = LuluUI
+
+-- ============================================================
+-- SERVICES
+-- ============================================================
+local TweenService     = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
+local Players          = game:GetService("Players")
+
+-- ============================================================
+-- DEFAULT THEME
+-- Bisa di-override sebelum LuluUI.new() dipanggil:
+--   LuluUI.Theme.sidebar = Color3.fromRGB(0, 100, 120)
+-- ============================================================
+LuluUI.Theme = {
+    accent       = Color3.fromRGB(40,  120, 255),
+    accentDark   = Color3.fromRGB(70,  0,   90),
+    sidebar      = Color3.fromRGB(100, 0,   120),
+    sidebarBg    = Color3.fromRGB(128, 0,   128),
+    windowBg     = Color3.fromRGB(255, 255, 255),
+    contentBg    = Color3.fromRGB(245, 247, 252),
+    text         = Color3.fromRGB(40,  50,  70),
+    textLight    = Color3.fromRGB(200, 200, 220),
+    textWhite    = Color3.fromRGB(255, 255, 255),
+    toggleOn     = Color3.fromRGB(40,  180, 80),
+    toggleOff    = Color3.fromRGB(190, 195, 210),
+    divider      = Color3.fromRGB(220, 225, 235),
+    shadow       = Color3.fromRGB(20,  90,  200),
+    accordionBg  = Color3.fromRGB(235, 238, 248),
+    accordionTxt = Color3.fromRGB(100, 110, 140),
+    segmentOff   = Color3.fromRGB(160, 165, 180),
+    toast        = Color3.fromRGB(30,  30,  40),
+}
+
+-- ============================================================
+-- INTERNAL PRIMITIVE HELPERS
+-- Semua helper terima parent + theme, TIDAK pakai global
+-- ============================================================
+local function mkCorner(parent, radius)
+    local c = Instance.new("UICorner", parent)
+    c.CornerRadius = UDim.new(0, radius or 8)
+    return c
+end
+
+local function makeHover(btn, base, hov)
+    btn.MouseEnter:Connect(function()
+        TweenService:Create(btn, TweenInfo.new(0.15), {BackgroundColor3 = hov}):Play()
+    end)
+    btn.MouseLeave:Connect(function()
+        TweenService:Create(btn, TweenInfo.new(0.15), {BackgroundColor3 = base}):Play()
+    end)
+end
+
+local function lighten(c, amt)
+    amt = amt or 30
+    return Color3.fromRGB(
+        math.clamp(c.R * 255 + amt, 0, 255),
+        math.clamp(c.G * 255 + amt, 0, 255),
+        math.clamp(c.B * 255 + amt, 0, 255)
+    )
+end
+
+-- ============================================================
+-- WIDGET BUILDERS
+-- Semua return Instance yang dibuat + tinggi yang dikonsumsi
+-- ============================================================
+
+-- Label teks biasa
+local function _mkLabel(parent, text, yOff, h, size, bold, color, theme)
+    local l = Instance.new("TextLabel")
+    l.Size = UDim2.new(1, -16, 0, h or 20)
+    l.Position = UDim2.new(0, 8, 0, yOff)
+    l.BackgroundTransparency = 1
+    l.Text = text
+    l.Font = bold and Enum.Font.GothamBold or Enum.Font.Gotham
+    l.TextSize = size or 12
+    l.TextColor3 = color or theme.textWhite
+    l.TextXAlignment = Enum.TextXAlignment.Left
+    l.TextTruncate = Enum.TextTruncate.AtEnd
+    l.Parent = parent
+    return l, h or 20
+end
+
+-- Garis divider
+local function _mkDivider(parent, yOff, theme)
+    local d = Instance.new("Frame")
+    d.Size = UDim2.new(1, -16, 0, 1)
+    d.Position = UDim2.new(0, 8, 0, yOff)
+    d.BackgroundColor3 = theme.divider
+    d.BorderSizePixel = 0
+    d.Parent = parent
+    return d, 1
+end
+
+-- Tombol penuh
+local function _mkBtn(parent, text, yOff, h, col, theme)
+    col = col or theme.accent
+    local b = Instance.new("TextButton")
+    b.Size = UDim2.new(1, -16, 0, h or 30)
+    b.Position = UDim2.new(0, 8, 0, yOff)
+    b.BackgroundColor3 = col
+    b.Text = text
+    b.Font = Enum.Font.GothamBold
+    b.TextSize = 12
+    b.TextColor3 = theme.textWhite
+    b.BorderSizePixel = 0
+    b.Parent = parent
+    mkCorner(b, 8)
+    makeHover(b, col, lighten(col))
+    return b, h or 30
+end
+
+-- Dua tombol setengah lebar berdampingan
+-- colA default hijau (Start), colB default merah (Stop)
+local function _mkHalfBtns(parent, textA, textB, yOff, h, colA, colB, theme)
+    h = h or 30
+    colA = colA or Color3.fromRGB(40, 180, 80)
+    colB = colB or Color3.fromRGB(200, 50, 50)
+
+    local bA = Instance.new("TextButton")
+    bA.Size = UDim2.new(0.5, -12, 0, h)
+    bA.Position = UDim2.new(0, 8, 0, yOff)
+    bA.BackgroundColor3 = colA
+    bA.Text = textA
+    bA.Font = Enum.Font.GothamBold
+    bA.TextSize = 11
+    bA.TextColor3 = theme.textWhite
+    bA.BorderSizePixel = 0
+    bA.Parent = parent
+    mkCorner(bA, 8)
+    makeHover(bA, colA, lighten(colA))
+
+    local bB = Instance.new("TextButton")
+    bB.Size = UDim2.new(0.5, -12, 0, h)
+    bB.Position = UDim2.new(0.5, 4, 0, yOff)
+    bB.BackgroundColor3 = colB
+    bB.Text = textB
+    bB.Font = Enum.Font.GothamBold
+    bB.TextSize = 11
+    bB.TextColor3 = theme.textWhite
+    bB.BorderSizePixel = 0
+    bB.Parent = parent
+    mkCorner(bB, 8)
+    makeHover(bB, colB, lighten(colB))
+
+    return bA, bB, h
+end
+
+-- Toggle switch
+local function _mkToggle(parent, label, yOff, default, callback, theme)
+    local state = {default}
+    local bg = Instance.new("Frame")
+    bg.Size = UDim2.new(1, -16, 0, 32)
+    bg.Position = UDim2.new(0, 8, 0, yOff)
+    bg.BackgroundColor3 = theme.contentBg
+    bg.BorderSizePixel = 0
+    bg.Parent = parent
+    mkCorner(bg, 8)
+
+    local lbl = Instance.new("TextLabel")
+    lbl.Size = UDim2.new(1, -60, 1, 0)
+    lbl.Position = UDim2.new(0, 10, 0, 0)
+    lbl.BackgroundTransparency = 1
+    lbl.Text = label
+    lbl.Font = Enum.Font.Gotham
+    lbl.TextSize = 12
+    lbl.TextColor3 = theme.text
+    lbl.TextXAlignment = Enum.TextXAlignment.Left
+    lbl.Parent = bg
+
+    local track = Instance.new("Frame")
+    track.Size = UDim2.new(0, 38, 0, 20)
+    track.Position = UDim2.new(1, -46, 0.5, -10)
+    track.BackgroundColor3 = default and theme.toggleOn or theme.toggleOff
+    track.BorderSizePixel = 0
+    track.Parent = bg
+    mkCorner(track, 10)
+
+    local knob = Instance.new("Frame")
+    knob.Size = UDim2.new(0, 16, 0, 16)
+    knob.Position = default and UDim2.new(0, 20, 0.5, -8) or UDim2.new(0, 2, 0.5, -8)
+    knob.BackgroundColor3 = theme.textWhite
+    knob.BorderSizePixel = 0
+    knob.Parent = track
+    mkCorner(knob, 8)
+
+    local btn = Instance.new("TextButton")
+    btn.Size = UDim2.new(1, 0, 1, 0)
+    btn.BackgroundTransparency = 1
+    btn.Text = ""
+    btn.Parent = bg
+
+    btn.MouseButton1Click:Connect(function()
+        state[1] = not state[1]
+        local on = state[1]
+        TweenService:Create(track, TweenInfo.new(0.2), {
+            BackgroundColor3 = on and theme.toggleOn or theme.toggleOff
+        }):Play()
+        TweenService:Create(knob, TweenInfo.new(0.2), {
+            Position = on and UDim2.new(0, 20, 0.5, -8) or UDim2.new(0, 2, 0.5, -8)
+        }):Play()
+        if callback then callback(on) end
+    end)
+
+    return bg, 32
+end
+
+-- Dropdown
+local function _mkDropdown(parent, mainFrame, label, options, default, yOff, callback, theme)
+    local open = {false}
+
+    local bg = Instance.new("Frame")
+    bg.Size = UDim2.new(1, -16, 0, 32)
+    bg.Position = UDim2.new(0, 8, 0, yOff)
+    bg.BackgroundColor3 = theme.contentBg
+    bg.BorderSizePixel = 0
+    bg.ClipsDescendants = false
+    bg.Parent = parent
+    mkCorner(bg, 8)
+
+    local lbl = Instance.new("TextLabel")
+    lbl.Size = UDim2.new(0.55, 0, 1, 0)
+    lbl.Position = UDim2.new(0, 10, 0, 0)
+    lbl.BackgroundTransparency = 1
+    lbl.Text = label
+    lbl.Font = Enum.Font.Gotham
+    lbl.TextSize = 12
+    lbl.TextColor3 = theme.text
+    lbl.TextXAlignment = Enum.TextXAlignment.Left
+    lbl.Parent = bg
+
+    local valBtn = Instance.new("TextButton")
+    valBtn.Size = UDim2.new(0, 100, 0, 24)
+    valBtn.Position = UDim2.new(1, -108, 0.5, -12)
+    valBtn.BackgroundColor3 = theme.accent
+    valBtn.Text = default .. " ▾"
+    valBtn.Font = Enum.Font.GothamBold
+    valBtn.TextSize = 11
+    valBtn.TextColor3 = theme.textWhite
+    valBtn.BorderSizePixel = 0
+    valBtn.Parent = bg
+    mkCorner(valBtn, 6)
+
+    local dropMenu = Instance.new("Frame")
+    dropMenu.Size = UDim2.new(0, 100, 0, #options * 28)
+    dropMenu.BackgroundColor3 = theme.textWhite
+    dropMenu.BorderSizePixel = 0
+    dropMenu.Visible = false
+    dropMenu.ZIndex = 200
+    mkCorner(dropMenu, 8)
+
+    local ds = Instance.new("Frame")
+    ds.Size = UDim2.new(1, 8, 1, 8)
+    ds.Position = UDim2.new(0, -4, 0, -4)
+    ds.BackgroundColor3 = theme.accent
+    ds.BackgroundTransparency = 0.85
+    ds.BorderSizePixel = 0
+    ds.ZIndex = 199
+    ds.Parent = dropMenu
+    mkCorner(ds, 10)
+
+    for i, opt in ipairs(options) do
+        local ob = Instance.new("TextButton")
+        ob.Size = UDim2.new(1, 0, 0, 28)
+        ob.Position = UDim2.new(0, 0, 0, (i - 1) * 28)
+        ob.BackgroundTransparency = 1
+        ob.Text = opt
+        ob.Font = Enum.Font.Gotham
+        ob.TextSize = 12
+        ob.TextColor3 = theme.text
+        ob.ZIndex = 201
+        ob.Parent = dropMenu
+        makeHover(ob, theme.textWhite, Color3.fromRGB(235, 240, 255))
+        ob.BackgroundTransparency = 1
+        ob.MouseButton1Click:Connect(function()
+            valBtn.Text = opt .. " ▾"
+            dropMenu.Visible = false
+            dropMenu.Parent = nil
+            open[1] = false
+            if callback then callback(opt) end
+        end)
+    end
+
+    valBtn.MouseButton1Click:Connect(function()
+        open[1] = not open[1]
+        if open[1] then
+            local absPos  = valBtn.AbsolutePosition
+            local framePos = mainFrame.AbsolutePosition
+            dropMenu.Position = UDim2.new(0, absPos.X - framePos.X, 0,
+                absPos.Y - framePos.Y + valBtn.AbsoluteSize.Y + 4)
+            dropMenu.Parent = mainFrame
+            dropMenu.Visible = true
+        else
+            dropMenu.Visible = false
+            dropMenu.Parent = nil
+        end
+    end)
+
+    return bg, 32
+end
+
+-- Multi-select Dropdown
+local function _mkMultiDropdown(parent, mainFrame, label, options, defaults, yOff, callback, theme)
+    local open    = {false}
+    local selected = {}  -- set: selected[opt] = true
+
+    -- init defaults
+    if defaults then
+        for _, v in ipairs(defaults) do selected[v] = true end
+    end
+
+    local function countSelected()
+        local n = 0
+        for _ in pairs(selected) do n = n + 1 end
+        return n
+    end
+
+    local function getLabel()
+        local n = countSelected()
+        if n == 0 then return "— none — ▾" end
+        if n == 1 then
+            for k in pairs(selected) do return k .. " ▾" end
+        end
+        return n .. " selected ▾"
+    end
+
+    local bg = Instance.new("Frame")
+    bg.Size = UDim2.new(1, -16, 0, 32)
+    bg.Position = UDim2.new(0, 8, 0, yOff)
+    bg.BackgroundColor3 = theme.contentBg
+    bg.BorderSizePixel = 0
+    bg.ClipsDescendants = false
+    bg.Parent = parent
+    mkCorner(bg, 8)
+
+    local lbl = Instance.new("TextLabel")
+    lbl.Size = UDim2.new(0.5, 0, 1, 0)
+    lbl.Position = UDim2.new(0, 10, 0, 0)
+    lbl.BackgroundTransparency = 1
+    lbl.Text = label
+    lbl.Font = Enum.Font.Gotham
+    lbl.TextSize = 12
+    lbl.TextColor3 = theme.text
+    lbl.TextXAlignment = Enum.TextXAlignment.Left
+    lbl.Parent = bg
+
+    local valBtn = Instance.new("TextButton")
+    valBtn.Size = UDim2.new(0, 110, 0, 24)
+    valBtn.Position = UDim2.new(1, -118, 0.5, -12)
+    valBtn.BackgroundColor3 = theme.accent
+    valBtn.Text = getLabel()
+    valBtn.Font = Enum.Font.GothamBold
+    valBtn.TextSize = 10
+    valBtn.TextColor3 = theme.textWhite
+    valBtn.BorderSizePixel = 0
+    valBtn.TextTruncate = Enum.TextTruncate.AtEnd
+    valBtn.Parent = bg
+    mkCorner(valBtn, 6)
+
+    local itemH   = 30
+    local maxShow = math.min(#options, 6)
+    local menuH   = maxShow * itemH + 4
+
+    local dropMenu = Instance.new("Frame")
+    dropMenu.Size = UDim2.new(0, 150, 0, menuH)
+    dropMenu.BackgroundColor3 = theme.textWhite
+    dropMenu.BorderSizePixel = 0
+    dropMenu.Visible = false
+    dropMenu.ZIndex = 200
+    dropMenu.ClipsDescendants = true
+    mkCorner(dropMenu, 8)
+
+    -- shadow/glow
+    local ds = Instance.new("Frame")
+    ds.Size = UDim2.new(1, 8, 1, 8)
+    ds.Position = UDim2.new(0, -4, 0, -4)
+    ds.BackgroundColor3 = theme.accent
+    ds.BackgroundTransparency = 0.85
+    ds.BorderSizePixel = 0
+    ds.ZIndex = 199
+    ds.Parent = dropMenu
+    mkCorner(ds, 10)
+
+    -- ScrollingFrame supaya kalau opsi banyak bisa scroll
+    local scroll = Instance.new("ScrollingFrame")
+    scroll.Size = UDim2.new(1, 0, 1, 0)
+    scroll.CanvasSize = UDim2.new(0, 0, 0, #options * itemH)
+    scroll.BackgroundTransparency = 1
+    scroll.BorderSizePixel = 0
+    scroll.ScrollBarThickness = 3
+    scroll.ScrollBarImageColor3 = theme.accent
+    scroll.ZIndex = 201
+    scroll.Parent = dropMenu
+
+    local itemRows = {}  -- simpan tiap row buat refresh warna
+
+    local function refreshRow(opt, row, check)
+        local on = selected[opt] == true
+        row.BackgroundColor3 = on and Color3.fromRGB(235, 245, 255) or theme.textWhite
+        check.Text = on and "✓" or ""
+        check.TextColor3 = theme.accent
+    end
+
+    for i, opt in ipairs(options) do
+        local row = Instance.new("TextButton")
+        row.Size = UDim2.new(1, 0, 0, itemH)
+        row.Position = UDim2.new(0, 0, 0, (i - 1) * itemH)
+        row.BackgroundColor3 = selected[opt] and Color3.fromRGB(235, 245, 255) or theme.textWhite
+        row.BorderSizePixel = 0
+        row.Text = ""
+        row.ZIndex = 202
+        row.Parent = scroll
+        mkCorner(row, 0)
+
+        -- Checkmark box
+        local check = Instance.new("TextLabel")
+        check.Size = UDim2.new(0, 20, 0, 20)
+        check.Position = UDim2.new(0, 6, 0.5, -10)
+        check.BackgroundColor3 = theme.contentBg
+        check.BorderSizePixel = 0
+        check.Text = selected[opt] and "✓" or ""
+        check.Font = Enum.Font.GothamBold
+        check.TextSize = 12
+        check.TextColor3 = theme.accent
+        check.TextXAlignment = Enum.TextXAlignment.Center
+        check.ZIndex = 203
+        check.Parent = row
+        mkCorner(check, 4)
+
+        -- Nama opsi
+        local optLbl = Instance.new("TextLabel")
+        optLbl.Size = UDim2.new(1, -34, 1, 0)
+        optLbl.Position = UDim2.new(0, 32, 0, 0)
+        optLbl.BackgroundTransparency = 1
+        optLbl.Text = opt
+        optLbl.Font = Enum.Font.Gotham
+        optLbl.TextSize = 12
+        optLbl.TextColor3 = theme.text
+        optLbl.TextXAlignment = Enum.TextXAlignment.Left
+        optLbl.ZIndex = 203
+        optLbl.Parent = row
+
+        table.insert(itemRows, {opt = opt, row = row, check = check})
+
+        row.MouseButton1Click:Connect(function()
+            -- Toggle
+            if selected[opt] then
+                selected[opt] = nil
+            else
+                selected[opt] = true
+            end
+            -- Refresh semua row (biar konsisten)
+            for _, r in ipairs(itemRows) do
+                refreshRow(r.opt, r.row, r.check)
+            end
+            -- Update label tombol
+            valBtn.Text = getLabel()
+            -- Kirim tabel hasil ke callback
+            if callback then
+                local result = {}
+                for k in pairs(selected) do table.insert(result, k) end
+                callback(result)
+            end
+        end)
+    end
+
+    -- Open / close menu
+    local function closeMenu()
+        dropMenu.Visible = false
+        dropMenu.Parent = nil
+        open[1] = false
+    end
+
+    valBtn.MouseButton1Click:Connect(function()
+        open[1] = not open[1]
+        if open[1] then
+            local absPos  = valBtn.AbsolutePosition
+            local framePos = mainFrame.AbsolutePosition
+            dropMenu.Position = UDim2.new(0, absPos.X - framePos.X, 0,
+                absPos.Y - framePos.Y + valBtn.AbsoluteSize.Y + 4)
+            dropMenu.Parent = mainFrame
+            dropMenu.Visible = true
+        else
+            closeMenu()
+        end
+    end)
+
+    return bg, 32
+end
+
+-- ============================================================
+-- TEXT INPUT
+-- label di atas, kotak ketik di bawah
+-- opts.placeholder, opts.maxLen, opts.clearOnSubmit
+-- callback(text) dipanggil saat Enter / tombol ✓
+-- ============================================================
+local function _mkTextInput(parent, label, yOff, default, callback, theme, opts)
+    opts = opts or {}
+    local totalH = 58
+
+    local bg = Instance.new("Frame")
+    bg.Size = UDim2.new(1, -16, 0, totalH)
+    bg.Position = UDim2.new(0, 8, 0, yOff)
+    bg.BackgroundColor3 = theme.contentBg
+    bg.BorderSizePixel = 0
+    bg.Parent = parent
+    mkCorner(bg, 8)
+
+    -- Label atas
+    local lbl = Instance.new("TextLabel")
+    lbl.Size = UDim2.new(1, -12, 0, 16)
+    lbl.Position = UDim2.new(0, 8, 0, 6)
+    lbl.BackgroundTransparency = 1
+    lbl.Text = label
+    lbl.Font = Enum.Font.Gotham
+    lbl.TextSize = 10
+    lbl.TextColor3 = theme.accordionTxt
+    lbl.TextXAlignment = Enum.TextXAlignment.Left
+    lbl.Parent = bg
+
+    -- Kotak input
+    local inputBg = Instance.new("Frame")
+    inputBg.Size = UDim2.new(1, -12, 0, 26)
+    inputBg.Position = UDim2.new(0, 6, 0, 24)
+    inputBg.BackgroundColor3 = theme.textWhite
+    inputBg.BorderSizePixel = 0
+    inputBg.Parent = bg
+    mkCorner(inputBg, 6)
+
+    -- Border accent saat fokus
+    local border = Instance.new("UIStroke", inputBg)
+    border.Color = theme.divider
+    border.Thickness = 1
+
+    local box = Instance.new("TextBox")
+    box.Size = UDim2.new(1, -38, 1, 0)
+    box.Position = UDim2.new(0, 8, 0, 0)
+    box.BackgroundTransparency = 1
+    box.Text = default or ""
+    box.PlaceholderText = opts.placeholder or "ketik di sini..."
+    box.PlaceholderColor3 = Color3.fromRGB(180, 185, 200)
+    box.Font = Enum.Font.Gotham
+    box.TextSize = 11
+    box.TextColor3 = theme.text
+    box.TextXAlignment = Enum.TextXAlignment.Left
+    box.ClearTextOnFocus = false
+    box.MaxVisibleGraphemes = opts.maxLen or math.huge
+    box.Parent = inputBg
+
+    -- Tombol submit ✓
+    local submitBtn = Instance.new("TextButton")
+    submitBtn.Size = UDim2.new(0, 26, 0, 20)
+    submitBtn.Position = UDim2.new(1, -30, 0.5, -10)
+    submitBtn.BackgroundColor3 = theme.accent
+    submitBtn.Text = "✓"
+    submitBtn.Font = Enum.Font.GothamBold
+    submitBtn.TextSize = 12
+    submitBtn.TextColor3 = theme.textWhite
+    submitBtn.BorderSizePixel = 0
+    submitBtn.Parent = inputBg
+    mkCorner(submitBtn, 5)
+
+    -- Fokus → border biru
+    box.Focused:Connect(function()
+        TweenService:Create(border, TweenInfo.new(0.15), {Color = theme.accent}):Play()
+    end)
+    box.FocusLost:Connect(function(enterPressed)
+        TweenService:Create(border, TweenInfo.new(0.15), {Color = theme.divider}):Play()
+        if enterPressed and callback then
+            callback(box.Text)
+            if opts.clearOnSubmit then box.Text = "" end
+        end
+    end)
+    submitBtn.MouseButton1Click:Connect(function()
+        if callback then callback(box.Text) end
+        if opts.clearOnSubmit then box.Text = "" end
+    end)
+
+    -- Expose: caller bisa baca/set box.Text
+    return bg, totalH, box
+end
+
+-- ============================================================
+-- LIST / TABLE
+-- Nampilin baris data yang bisa di-update dinamis
+-- opts.height  → tinggi area list (default 120)
+-- opts.columns → {"Col A", "Col B"} (optional, kalau nil = single column)
+-- api yang di-return: :Add(row), :Remove(i), :Clear(), :SetRows(tbl)
+-- row bisa string (single col) atau table of strings (multi col)
+-- ============================================================
+local function _mkList(parent, label, yOff, theme, opts)
+    opts = opts or {}
+    local listH   = opts.height  or 120
+    local columns = opts.columns or nil   -- nil = single column
+    local rowH    = 22
+    local totalH  = listH + (label ~= "" and 20 or 0) + 8
+
+    local bg = Instance.new("Frame")
+    bg.Size = UDim2.new(1, -16, 0, totalH)
+    bg.Position = UDim2.new(0, 8, 0, yOff)
+    bg.BackgroundColor3 = theme.contentBg
+    bg.BorderSizePixel = 0
+    bg.Parent = parent
+    mkCorner(bg, 8)
+
+    local labelY = 0
+    if label and label ~= "" then
+        local hdr = Instance.new("TextLabel")
+        hdr.Size = UDim2.new(1, -12, 0, 16)
+        hdr.Position = UDim2.new(0, 8, 0, 6)
+        hdr.BackgroundTransparency = 1
+        hdr.Text = label
+        hdr.Font = Enum.Font.Gotham
+        hdr.TextSize = 10
+        hdr.TextColor3 = theme.accordionTxt
+        hdr.TextXAlignment = Enum.TextXAlignment.Left
+        hdr.Parent = bg
+        labelY = 22
+    end
+
+    -- Header kolom (optional)
+    local colY = labelY
+    if columns then
+        local hrow = Instance.new("Frame")
+        hrow.Size = UDim2.new(1, -12, 0, 18)
+        hrow.Position = UDim2.new(0, 6, 0, labelY)
+        hrow.BackgroundColor3 = theme.accordionBg
+        hrow.BorderSizePixel = 0
+        hrow.Parent = bg
+        mkCorner(hrow, 4)
+        local colW = 1 / #columns
+        for ci, cname in ipairs(columns) do
+            local cl = Instance.new("TextLabel")
+            cl.Size = UDim2.new(colW, 0, 1, 0)
+            cl.Position = UDim2.new(colW * (ci - 1), 0, 0, 0)
+            cl.BackgroundTransparency = 1
+            cl.Text = cname
+            cl.Font = Enum.Font.GothamBold
+            cl.TextSize = 9
+            cl.TextColor3 = theme.accordionTxt
+            cl.TextXAlignment = Enum.TextXAlignment.Center
+            cl.Parent = hrow
+        end
+        colY = labelY + 22
+    end
+
+    -- Scroll area
+    local scroll = Instance.new("ScrollingFrame")
+    scroll.Size = UDim2.new(1, -12, 0, listH - (colY - labelY))
+    scroll.Position = UDim2.new(0, 6, 0, colY)
+    scroll.BackgroundTransparency = 1
+    scroll.BorderSizePixel = 0
+    scroll.ScrollBarThickness = 3
+    scroll.ScrollBarImageColor3 = theme.accent
+    scroll.CanvasSize = UDim2.new(0, 0, 0, 0)
+    scroll.Parent = bg
+
+    local rows = {}
+
+    local function rebuildRows()
+        for _, c in ipairs(scroll:GetChildren()) do c:Destroy() end
+        for ri, row in ipairs(rows) do
+            local even = ri % 2 == 0
+            local rowFr = Instance.new("Frame")
+            rowFr.Size = UDim2.new(1, 0, 0, rowH)
+            rowFr.Position = UDim2.new(0, 0, 0, (ri - 1) * rowH)
+            rowFr.BackgroundColor3 = even
+                and Color3.fromRGB(240, 243, 252)
+                or  theme.textWhite
+            rowFr.BackgroundTransparency = even and 0 or 0.3
+            rowFr.BorderSizePixel = 0
+            rowFr.Parent = scroll
+
+            if type(row) == "string" then
+                -- Single column
+                local tl = Instance.new("TextLabel")
+                tl.Size = UDim2.new(1, -8, 1, 0)
+                tl.Position = UDim2.new(0, 6, 0, 0)
+                tl.BackgroundTransparency = 1
+                tl.Text = row
+                tl.Font = Enum.Font.Gotham
+                tl.TextSize = 11
+                tl.TextColor3 = theme.text
+                tl.TextXAlignment = Enum.TextXAlignment.Left
+                tl.TextTruncate = Enum.TextTruncate.AtEnd
+                tl.Parent = rowFr
+            else
+                -- Multi column
+                local colW = 1 / #row
+                for ci, cell in ipairs(row) do
+                    local tl = Instance.new("TextLabel")
+                    tl.Size = UDim2.new(colW, 0, 1, 0)
+                    tl.Position = UDim2.new(colW * (ci - 1), 0, 0, 0)
+                    tl.BackgroundTransparency = 1
+                    tl.Text = tostring(cell)
+                    tl.Font = Enum.Font.Gotham
+                    tl.TextSize = 11
+                    tl.TextColor3 = theme.text
+                    tl.TextXAlignment = Enum.TextXAlignment.Center
+                    tl.TextTruncate = Enum.TextTruncate.AtEnd
+                    tl.Parent = rowFr
+                end
+            end
+        end
+        scroll.CanvasSize = UDim2.new(0, 0, 0, #rows * rowH)
+        -- Auto scroll ke bawah
+        scroll.CanvasPosition = Vector2.new(0, math.max(0, #rows * rowH - scroll.AbsoluteSize.Y))
+    end
+
+    -- Public API
+    local api = {}
+
+    function api:Add(row)
+        table.insert(rows, row)
+        rebuildRows()
+    end
+
+    function api:Remove(i)
+        table.remove(rows, i)
+        rebuildRows()
+    end
+
+    function api:Clear()
+        rows = {}
+        rebuildRows()
+    end
+
+    function api:SetRows(tbl)
+        rows = {}
+        for _, r in ipairs(tbl) do table.insert(rows, r) end
+        rebuildRows()
+    end
+
+    function api:Count()
+        return #rows
+    end
+
+    return bg, totalH, api
+end
+
+-- ============================================================
+-- PROGRESS BAR
+-- opts.height    → tinggi bar (default 8)
+-- opts.showText  → true/false, nampilin "42%" di tengah bar (default true)
+-- api yang di-return: :Set(0-100), :Get()
+-- ============================================================
+local function _mkProgressBar(parent, label, yOff, initVal, theme, opts)
+    opts = opts or {}
+    local barH     = opts.barHeight or 10
+    local showText = opts.showText ~= false
+    local totalH   = barH + 24
+
+    local val = {math.clamp(initVal or 0, 0, 100)}
+
+    local bg = Instance.new("Frame")
+    bg.Size = UDim2.new(1, -16, 0, totalH)
+    bg.Position = UDim2.new(0, 8, 0, yOff)
+    bg.BackgroundTransparency = 1
+    bg.BorderSizePixel = 0
+    bg.Parent = parent
+
+    -- Label + persen di baris atas
+    local topRow = Instance.new("Frame")
+    topRow.Size = UDim2.new(1, 0, 0, 14)
+    topRow.BackgroundTransparency = 1
+    topRow.Parent = bg
+
+    local lbl = Instance.new("TextLabel")
+    lbl.Size = UDim2.new(0.7, 0, 1, 0)
+    lbl.BackgroundTransparency = 1
+    lbl.Text = label
+    lbl.Font = Enum.Font.Gotham
+    lbl.TextSize = 10
+    lbl.TextColor3 = theme.accordionTxt
+    lbl.TextXAlignment = Enum.TextXAlignment.Left
+    lbl.Parent = topRow
+
+    local pctLbl = Instance.new("TextLabel")
+    pctLbl.Size = UDim2.new(0.3, 0, 1, 0)
+    pctLbl.Position = UDim2.new(0.7, 0, 0, 0)
+    pctLbl.BackgroundTransparency = 1
+    pctLbl.Text = val[1] .. "%"
+    pctLbl.Font = Enum.Font.GothamBold
+    pctLbl.TextSize = 10
+    pctLbl.TextColor3 = theme.accent
+    pctLbl.TextXAlignment = Enum.TextXAlignment.Right
+    pctLbl.Parent = topRow
+
+    -- Track (background bar)
+    local track = Instance.new("Frame")
+    track.Size = UDim2.new(1, 0, 0, barH)
+    track.Position = UDim2.new(0, 0, 0, 16)
+    track.BackgroundColor3 = theme.toggleOff
+    track.BorderSizePixel = 0
+    track.ClipsDescendants = true
+    track.Parent = bg
+    mkCorner(track, barH / 2)
+
+    -- Fill (biru, animasi)
+    local fill = Instance.new("Frame")
+    fill.Size = UDim2.new(val[1] / 100, 0, 1, 0)
+    fill.BackgroundColor3 = theme.accent
+    fill.BorderSizePixel = 0
+    fill.Parent = track
+    mkCorner(fill, barH / 2)
+
+    -- Public API
+    local api = {}
+
+    function api:Set(v)
+        v = math.clamp(v, 0, 100)
+        val[1] = v
+        TweenService:Create(fill, TweenInfo.new(0.3, Enum.EasingStyle.Quad), {
+            Size = UDim2.new(v / 100, 0, 1, 0)
+        }):Play()
+        pctLbl.Text = math.floor(v) .. "%"
+        -- Warna bar: merah → kuning → hijau
+        local r = v < 50 and 1 or (1 - (v - 50) / 50)
+        local g = v > 50 and 1 or (v / 50)
+        TweenService:Create(fill, TweenInfo.new(0.3), {
+            BackgroundColor3 = Color3.new(r * 0.8, g * 0.8, 0.2)
+        }):Play()
+    end
+
+    function api:Get()
+        return val[1]
+    end
+
+    return bg, totalH, api
+end
+
+-- Number input (− | [ketik] | +)
+-- Nilai di tengah bisa diklik untuk ketik manual, Enter/blur untuk konfirmasi
+local function _mkNumberInput(parent, labelText, yOff, defaultVal, step, minVal, maxVal, callback, theme)
+    local cur = {defaultVal}
+
+    local bg = Instance.new("Frame")
+    bg.Size = UDim2.new(1, -16, 0, 30)
+    bg.Position = UDim2.new(0, 8, 0, yOff)
+    bg.BackgroundColor3 = theme.contentBg
+    bg.BorderSizePixel = 0
+    bg.Parent = parent
+    mkCorner(bg, 8)
+
+    local lbl = Instance.new("TextLabel")
+    lbl.Size = UDim2.new(0.5, 0, 1, 0)
+    lbl.Position = UDim2.new(0, 8, 0, 0)
+    lbl.BackgroundTransparency = 1
+    lbl.Text = labelText
+    lbl.Font = Enum.Font.Gotham
+    lbl.TextSize = 10
+    lbl.TextColor3 = theme.text
+    lbl.TextXAlignment = Enum.TextXAlignment.Left
+    lbl.Parent = bg
+
+    local minusBtn = Instance.new("TextButton")
+    minusBtn.Size = UDim2.new(0, 22, 0, 22)
+    minusBtn.Position = UDim2.new(1, -90, 0.5, -11)
+    minusBtn.Text = "−"
+    minusBtn.Font = Enum.Font.GothamBold
+    minusBtn.TextSize = 14
+    minusBtn.BackgroundColor3 = Color3.fromRGB(200, 210, 230)
+    minusBtn.TextColor3 = theme.text
+    minusBtn.BorderSizePixel = 0
+    minusBtn.Parent = bg
+    mkCorner(minusBtn, 5)
+
+    -- Kotak nilai: TextBox supaya bisa diklik & ketik manual
+    local valBox = Instance.new("TextBox")
+    valBox.Size = UDim2.new(0, 38, 0, 22)
+    valBox.Position = UDim2.new(1, -64, 0.5, -11)
+    valBox.BackgroundColor3 = theme.textWhite
+    valBox.BorderSizePixel = 0
+    valBox.Text = tostring(defaultVal)
+    valBox.Font = Enum.Font.GothamBold
+    valBox.TextSize = 11
+    valBox.TextColor3 = theme.accent
+    valBox.TextXAlignment = Enum.TextXAlignment.Center
+    valBox.ClearTextOnFocus = true
+    valBox.Parent = bg
+    mkCorner(valBox, 4)
+
+    -- Border tipis, nyala biru saat fokus
+    local border = Instance.new("UIStroke", valBox)
+    border.Color = theme.divider
+    border.Thickness = 1
+
+    local plusBtn = Instance.new("TextButton")
+    plusBtn.Size = UDim2.new(0, 22, 0, 22)
+    plusBtn.Position = UDim2.new(1, -26, 0.5, -11)
+    plusBtn.Text = "+"
+    plusBtn.Font = Enum.Font.GothamBold
+    plusBtn.TextSize = 14
+    plusBtn.BackgroundColor3 = theme.accent
+    plusBtn.TextColor3 = theme.textWhite
+    plusBtn.BorderSizePixel = 0
+    plusBtn.Parent = bg
+    mkCorner(plusBtn, 5)
+
+    local function update(v)
+        v = math.clamp(math.floor(v / step + 0.5) * step, minVal, maxVal)
+        v = math.floor(v * 100 + 0.5) / 100
+        cur[1] = v
+        valBox.Text = tostring(v)
+        if callback then callback(v) end
+    end
+
+    -- Fokus → border biru, teks dipilih semua
+    valBox.Focused:Connect(function()
+        TweenService:Create(border, TweenInfo.new(0.15), {Color = theme.accent}):Play()
+        valBox.CursorPosition = #valBox.Text + 1
+        valBox.SelectionStart = 1
+    end)
+
+    -- Blur/Enter → parse dan clamp
+    valBox.FocusLost:Connect(function()
+        TweenService:Create(border, TweenInfo.new(0.15), {Color = theme.divider}):Play()
+        local typed = tonumber(valBox.Text)
+        if typed then
+            update(typed)
+        else
+            -- Input bukan angka → kembalikan ke nilai sebelumnya
+            valBox.Text = tostring(cur[1])
+        end
+    end)
+
+    minusBtn.MouseButton1Click:Connect(function() update(cur[1] - step) end)
+    plusBtn.MouseButton1Click:Connect(function()  update(cur[1] + step) end)
+
+    return bg, 30
+end
+
+-- Segmented selector (pilihan mode: Normal | Mid | Brutal, dll)
+local function _mkSegment(parent, label, options, default, yOff, callback, theme)
+    local bg = Instance.new("Frame")
+    bg.Size = UDim2.new(1, -16, 0, 52)
+    bg.Position = UDim2.new(0, 8, 0, yOff)
+    bg.BackgroundTransparency = 1
+    bg.BorderSizePixel = 0
+    bg.Parent = parent
+
+    local lbl = Instance.new("TextLabel")
+    lbl.Size = UDim2.new(1, 0, 0, 14)
+    lbl.Position = UDim2.new(0, 0, 0, 0)
+    lbl.BackgroundTransparency = 1
+    lbl.Text = label
+    lbl.Font = Enum.Font.Gotham
+    lbl.TextSize = 10
+    lbl.TextColor3 = theme.accordionTxt
+    lbl.TextXAlignment = Enum.TextXAlignment.Left
+    lbl.Parent = bg
+
+    local strip = Instance.new("Frame")
+    strip.Size = UDim2.new(1, 0, 0, 30)
+    strip.Position = UDim2.new(0, 0, 0, 16)
+    strip.BackgroundColor3 = theme.accordionBg
+    strip.BorderSizePixel = 0
+    strip.Parent = bg
+    mkCorner(strip, 8)
+
+    local selected = {default}
+    local btns = {}
+
+    local function refresh()
+        for _, info in ipairs(btns) do
+            info.b.BackgroundColor3 = (info.opt == selected[1]) and theme.toggleOn or theme.segmentOff
+        end
+    end
+
+    for i, opt in ipairs(options) do
+        local b = Instance.new("TextButton")
+        b.Size = UDim2.new(1 / #options, i < #options and -2 or 0, 1, -6)
+        b.Position = UDim2.new((i - 1) / #options, i == 1 and 3 or 1, 0, 3)
+        b.BackgroundColor3 = (opt == default) and theme.toggleOn or theme.segmentOff
+        b.Text = opt
+        b.Font = Enum.Font.GothamBold
+        b.TextSize = 10
+        b.TextColor3 = theme.textWhite
+        b.BorderSizePixel = 0
+        b.Parent = strip
+        mkCorner(b, 6)
+        table.insert(btns, {b = b, opt = opt})
+        b.MouseButton1Click:Connect(function()
+            selected[1] = opt
+            refresh()
+            if callback then callback(opt) end
+        end)
+    end
+
+    return bg, 52
+end
+
+-- ============================================================
+-- SEPARATOR BERLABEL  ──── Judul Section ────
+-- Garis horizontal dengan teks di tengah
+-- ============================================================
+local function _mkSeparator(parent, text, yOff, theme)
+    local h = 16
+    local bg = Instance.new("Frame")
+    bg.Size = UDim2.new(1, -16, 0, h)
+    bg.Position = UDim2.new(0, 8, 0, yOff)
+    bg.BackgroundTransparency = 1
+    bg.BorderSizePixel = 0
+    bg.Parent = parent
+
+    -- Garis kiri
+    local lineL = Instance.new("Frame")
+    lineL.Size = UDim2.new(0.5, -30, 0, 1)
+    lineL.Position = UDim2.new(0, 0, 0.5, 0)
+    lineL.BackgroundColor3 = theme.divider
+    lineL.BorderSizePixel = 0
+    lineL.Parent = bg
+
+    -- Teks tengah
+    local lbl = Instance.new("TextLabel")
+    lbl.Size = UDim2.new(0, 56, 1, 0)
+    lbl.Position = UDim2.new(0.5, -28, 0, 0)
+    lbl.BackgroundTransparency = 1
+    lbl.Text = text
+    lbl.Font = Enum.Font.GothamBold
+    lbl.TextSize = 9
+    lbl.TextColor3 = theme.accordionTxt
+    lbl.TextXAlignment = Enum.TextXAlignment.Center
+    lbl.Parent = bg
+
+    -- Garis kanan
+    local lineR = Instance.new("Frame")
+    lineR.Size = UDim2.new(0.5, -30, 0, 1)
+    lineR.Position = UDim2.new(0.5, 30, 0.5, 0)
+    lineR.BackgroundColor3 = theme.divider
+    lineR.BorderSizePixel = 0
+    lineR.Parent = bg
+
+    return bg, h
+end
+
+-- ============================================================
+-- BADGE / TAG
+-- Label kecil berwarna inline, return instance (bisa update .Text)
+-- opts.color → warna background badge (default accent)
+-- opts.textColor → warna teks (default putih)
+-- ============================================================
+local function _mkBadge(parent, text, yOff, theme, opts)
+    opts = opts or {}
+    local col     = opts.color     or theme.accent
+    local textCol = opts.textColor or theme.textWhite
+    local h       = 20
+
+    local badge = Instance.new("TextLabel")
+    badge.Size = UDim2.new(0, 0, 0, h)   -- auto-size via AutomaticSize
+    badge.AutomaticSize = Enum.AutomaticSize.X
+    badge.Position = UDim2.new(0, 8, 0, yOff)
+    badge.BackgroundColor3 = col
+    badge.BorderSizePixel = 0
+    badge.Text = "  " .. text .. "  "
+    badge.Font = Enum.Font.GothamBold
+    badge.TextSize = 9
+    badge.TextColor3 = textCol
+    badge.TextXAlignment = Enum.TextXAlignment.Center
+    badge.Parent = parent
+    mkCorner(badge, 4)
+
+    return badge, h
+end
+
+-- ============================================================
+-- COPY BUTTON
+-- Baris label + tombol kecil "Copy" di kanan
+-- Klik → setclipboard(value), lalu tombol sementara jadi "✓ Copied"
+-- ============================================================
+local function _mkCopyButton(parent, label, value, yOff, theme)
+    local h = 30
+
+    local bg = Instance.new("Frame")
+    bg.Size = UDim2.new(1, -16, 0, h)
+    bg.Position = UDim2.new(0, 8, 0, yOff)
+    bg.BackgroundColor3 = theme.contentBg
+    bg.BorderSizePixel = 0
+    bg.Parent = parent
+    mkCorner(bg, 8)
+
+    local lbl = Instance.new("TextLabel")
+    lbl.Size = UDim2.new(1, -80, 1, 0)
+    lbl.Position = UDim2.new(0, 10, 0, 0)
+    lbl.BackgroundTransparency = 1
+    lbl.Text = label
+    lbl.Font = Enum.Font.Gotham
+    lbl.TextSize = 11
+    lbl.TextColor3 = theme.text
+    lbl.TextXAlignment = Enum.TextXAlignment.Left
+    lbl.TextTruncate = Enum.TextTruncate.AtEnd
+    lbl.Parent = bg
+
+    local copyBtn = Instance.new("TextButton")
+    copyBtn.Size = UDim2.new(0, 58, 0, 20)
+    copyBtn.Position = UDim2.new(1, -64, 0.5, -10)
+    copyBtn.BackgroundColor3 = theme.accent
+    copyBtn.Text = "Copy"
+    copyBtn.Font = Enum.Font.GothamBold
+    copyBtn.TextSize = 10
+    copyBtn.TextColor3 = theme.textWhite
+    copyBtn.BorderSizePixel = 0
+    copyBtn.Parent = bg
+    mkCorner(copyBtn, 5)
+    makeHover(copyBtn, theme.accent, lighten(theme.accent))
+
+    local copying = false
+    copyBtn.MouseButton1Click:Connect(function()
+        if copying then return end
+        copying = true
+        pcall(function() setclipboard(value) end)
+        copyBtn.Text = "✓ Copied"
+        copyBtn.BackgroundColor3 = theme.toggleOn
+        task.wait(1.5)
+        copyBtn.Text = "Copy"
+        copyBtn.BackgroundColor3 = theme.accent
+        copying = false
+    end)
+
+    -- Expose: caller bisa update value kalau dinamis
+    return bg, h, function(newVal) value = newVal end
+end
+
+-- ============================================================
+-- CONFIRM DIALOG
+-- Popup kecil di tengah mainFrame: "Judul" + pesan + Batal/Ya
+-- onConfirm() dipanggil kalau user klik Ya
+-- onCancel()  dipanggil kalau klik Batal / luar popup (optional)
+-- ============================================================
+local function _showConfirm(mainFrame, title, message, onConfirm, onCancel, theme)
+    -- Overlay gelap
+    local overlay = Instance.new("Frame")
+    overlay.Size = UDim2.new(1, 0, 1, 0)
+    overlay.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+    overlay.BackgroundTransparency = 0.5
+    overlay.BorderSizePixel = 0
+    overlay.ZIndex = 500
+    overlay.Parent = mainFrame
+
+    -- Kotak dialog
+    local dialog = Instance.new("Frame")
+    dialog.Size = UDim2.new(0, 200, 0, 110)
+    dialog.AnchorPoint = Vector2.new(0.5, 0.5)
+    dialog.Position = UDim2.new(0.5, 0, 0.5, 0)
+    dialog.BackgroundColor3 = theme.textWhite
+    dialog.BorderSizePixel = 0
+    dialog.ZIndex = 501
+    dialog.Parent = mainFrame
+    mkCorner(dialog, 10)
+
+    -- Shadow
+    local ds = Instance.new("Frame")
+    ds.Size = UDim2.new(1, 10, 1, 10)
+    ds.Position = UDim2.new(0, -5, 0, -5)
+    ds.BackgroundColor3 = theme.accent
+    ds.BackgroundTransparency = 0.85
+    ds.BorderSizePixel = 0
+    ds.ZIndex = 500
+    ds.Parent = dialog
+    mkCorner(ds, 12)
+
+    -- Animasi masuk (scale dari kecil)
+    dialog.Size = UDim2.new(0, 0, 0, 0)
+    TweenService:Create(dialog,
+        TweenInfo.new(0.25, Enum.EasingStyle.Back, Enum.EasingDirection.Out),
+        {Size = UDim2.new(0, 200, 0, 110)}
+    ):Play()
+
+    -- Judul
+    local titleLbl = Instance.new("TextLabel")
+    titleLbl.Size = UDim2.new(1, -16, 0, 24)
+    titleLbl.Position = UDim2.new(0, 8, 0, 8)
+    titleLbl.BackgroundTransparency = 1
+    titleLbl.Text = title
+    titleLbl.Font = Enum.Font.GothamBold
+    titleLbl.TextSize = 13
+    titleLbl.TextColor3 = theme.text
+    titleLbl.TextXAlignment = Enum.TextXAlignment.Center
+    titleLbl.ZIndex = 502
+    titleLbl.Parent = dialog
+
+    -- Pesan
+    local msgLbl = Instance.new("TextLabel")
+    msgLbl.Size = UDim2.new(1, -16, 0, 30)
+    msgLbl.Position = UDim2.new(0, 8, 0, 34)
+    msgLbl.BackgroundTransparency = 1
+    msgLbl.Text = message
+    msgLbl.Font = Enum.Font.Gotham
+    msgLbl.TextSize = 11
+    msgLbl.TextColor3 = theme.accordionTxt
+    msgLbl.TextXAlignment = Enum.TextXAlignment.Center
+    msgLbl.TextWrapped = true
+    msgLbl.ZIndex = 502
+    msgLbl.Parent = dialog
+
+    local function closeDialog()
+        TweenService:Create(dialog,
+            TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.In),
+            {Size = UDim2.new(0, 0, 0, 0)}
+        ):Play()
+        task.wait(0.16)
+        pcall(function() overlay:Destroy() end)
+        pcall(function() dialog:Destroy() end)
+    end
+
+    -- Tombol Batal
+    local cancelBtn = Instance.new("TextButton")
+    cancelBtn.Size = UDim2.new(0.5, -10, 0, 28)
+    cancelBtn.Position = UDim2.new(0, 8, 1, -36)
+    cancelBtn.BackgroundColor3 = Color3.fromRGB(210, 215, 225)
+    cancelBtn.Text = "Batal"
+    cancelBtn.Font = Enum.Font.GothamBold
+    cancelBtn.TextSize = 11
+    cancelBtn.TextColor3 = theme.text
+    cancelBtn.BorderSizePixel = 0
+    cancelBtn.ZIndex = 502
+    cancelBtn.Parent = dialog
+    mkCorner(cancelBtn, 7)
+    makeHover(cancelBtn, Color3.fromRGB(210,215,225), Color3.fromRGB(190,195,210))
+
+    -- Tombol Ya
+    local confirmBtn = Instance.new("TextButton")
+    confirmBtn.Size = UDim2.new(0.5, -10, 0, 28)
+    confirmBtn.Position = UDim2.new(0.5, 2, 1, -36)
+    confirmBtn.BackgroundColor3 = Color3.fromRGB(210, 50, 50)
+    confirmBtn.Text = "Ya, lanjut"
+    confirmBtn.Font = Enum.Font.GothamBold
+    confirmBtn.TextSize = 11
+    confirmBtn.TextColor3 = theme.textWhite
+    confirmBtn.BorderSizePixel = 0
+    confirmBtn.ZIndex = 502
+    confirmBtn.Parent = dialog
+    mkCorner(confirmBtn, 7)
+    makeHover(confirmBtn, Color3.fromRGB(210,50,50), Color3.fromRGB(235,70,70))
+
+    cancelBtn.MouseButton1Click:Connect(function()
+        closeDialog()
+        if onCancel then onCancel() end
+    end)
+    confirmBtn.MouseButton1Click:Connect(function()
+        closeDialog()
+        if onConfirm then onConfirm() end
+    end)
+    -- Klik overlay = batal
+    overlay.InputBegan:Connect(function(inp)
+        if inp.UserInputType == Enum.UserInputType.MouseButton1 then
+            closeDialog()
+            if onCancel then onCancel() end
+        end
+    end)
+end
+
+-- ============================================================
+-- SECTION OBJECT
+-- Returned oleh Tab:Accordion() untuk build isi accordion
+-- ============================================================
+local Section = {}
+Section.__index = Section
+
+function Section.new(container, mainFrame, theme, accordionStates)
+    return setmetatable({
+        _c  = container,
+        _mf = mainFrame,
+        _t  = theme,
+        _as = accordionStates,
+        _y  = 0,
+    }, Section)
+end
+
+local DEFAULT_GAP = 6
+
+function Section:Label(text, opts)
+    opts = opts or {}
+    local h = opts.height or 20
+    _mkLabel(self._c, text, self._y, h, opts.size, opts.bold, opts.color, self._t)
+    self._y = self._y + h + (opts.gap or 4)
+end
+
+function Section:Divider(opts)
+    opts = opts or {}
+    _mkDivider(self._c, self._y, self._t)
+    self._y = self._y + 1 + (opts.gap or 8)
+end
+
+-- Separator berlabel ──── Judul ────
+function Section:Separator(text, opts)
+    opts = opts or {}
+    _mkSeparator(self._c, text, self._y, self._t)
+    self._y = self._y + 16 + (opts.gap or 6)
+end
+
+-- Badge / Tag kecil berwarna
+-- opts.color, opts.textColor
+function Section:Badge(text, opts)
+    opts = opts or {}
+    _mkBadge(self._c, text, self._y, self._t, opts)
+    self._y = self._y + 20 + (opts.gap or 4)
+end
+
+-- Copy button — label + tombol Copy di kanan
+-- return: setter fn → panggil setter("nilai baru") kalau value dinamis
+function Section:CopyButton(label, value, opts)
+    opts = opts or {}
+    local _, _, setter = _mkCopyButton(self._c, label, value, self._y, self._t)
+    self._y = self._y + 30 + (opts.gap or DEFAULT_GAP)
+    return setter
+end
+
+-- Confirm dialog — muncul popup sebelum aksi destruktif
+-- callback dipanggil kalau user klik "Ya, lanjut"
+-- opts.title, opts.message, opts.onCancel
+function Section:Button(text, callback, opts)
+    opts = opts or {}
+    local h = opts.height or 30
+    local confirm = opts.confirm  -- {title="...", message="..."}
+    local b = _mkBtn(self._c, text, self._y, h, opts.color, self._t)
+    if callback then
+        b.MouseButton1Click:Connect(function()
+            if confirm then
+                _showConfirm(
+                    self._mf,
+                    confirm.title   or "Konfirmasi",
+                    confirm.message or "Lanjutkan aksi ini?",
+                    callback,
+                    opts.onCancel,
+                    self._t
+                )
+            else
+                callback()
+            end
+        end)
+    end
+    self._y = self._y + h + (opts.gap or DEFAULT_GAP)
+    return b
+end
+
+function Section:HalfButtons(textA, textB, cbA, cbB, opts)
+    opts = opts or {}
+    local h = opts.height or 30
+    local bA, bB = _mkHalfBtns(self._c, textA, textB, self._y, h,
+        opts.colorA, opts.colorB, self._t)
+    if cbA then bA.MouseButton1Click:Connect(cbA) end
+    if cbB then bB.MouseButton1Click:Connect(cbB) end
+    self._y = self._y + h + (opts.gap or DEFAULT_GAP)
+    return bA, bB
+end
+
+function Section:Toggle(label, default, callback, opts)
+    opts = opts or {}
+    _mkToggle(self._c, label, self._y, default, callback, self._t)
+    self._y = self._y + 32 + (opts.gap or DEFAULT_GAP)
+end
+
+function Section:Dropdown(label, options, default, callback, opts)
+    opts = opts or {}
+    _mkDropdown(self._c, self._mf, label, options, default, self._y, callback, self._t)
+    self._y = self._y + 32 + (opts.gap or DEFAULT_GAP)
+end
+
+-- Multi-select dropdown
+-- defaults = {"Opt1", "Opt2"} (boleh nil / {})
+-- callback(selectedTable) dipanggil tiap pilihan berubah
+function Section:MultiDropdown(label, options, defaults, callback, opts)
+    opts = opts or {}
+    _mkMultiDropdown(self._c, self._mf, label, options, defaults, self._y, callback, self._t)
+    self._y = self._y + 32 + (opts.gap or DEFAULT_GAP)
+end
+
+function Section:NumberInput(label, default, step, minVal, maxVal, callback, opts)
+    opts = opts or {}
+    _mkNumberInput(self._c, label, self._y, default, step, minVal, maxVal, callback, self._t)
+    self._y = self._y + 30 + (opts.gap or DEFAULT_GAP)
+end
+
+-- TextInput
+-- callback(text) dipanggil saat Enter atau tombol ✓
+-- opts.placeholder, opts.clearOnSubmit, opts.maxLen
+-- return: TextBox instance (bisa baca/set .Text)
+function Section:TextInput(label, default, callback, opts)
+    opts = opts or {}
+    local _, h, box = _mkTextInput(self._c, label, self._y, default, callback, self._t, opts)
+    self._y = self._y + h + (opts.gap or DEFAULT_GAP)
+    return box
+end
+
+-- List / Table
+-- opts.height, opts.columns
+-- return: api { :Add(row), :Remove(i), :Clear(), :SetRows(tbl), :Count() }
+function Section:List(label, opts)
+    opts = opts or {}
+    local _, h, api = _mkList(self._c, label, self._y, self._t, opts)
+    self._y = self._y + h + (opts.gap or DEFAULT_GAP)
+    return api
+end
+
+-- Progress Bar
+-- initVal = 0..100
+-- opts.barHeight, opts.showText
+-- return: api { :Set(0-100), :Get() }
+function Section:ProgressBar(label, initVal, opts)
+    opts = opts or {}
+    local _, h, api = _mkProgressBar(self._c, label, self._y, initVal, self._t, opts)
+    self._y = self._y + h + (opts.gap or DEFAULT_GAP)
+    return api
+end
+
+function Section:Segment(label, options, default, callback, opts)
+    opts = opts or {}
+    _mkSegment(self._c, label, options, default, self._y, callback, self._t)
+    self._y = self._y + 52 + (opts.gap or DEFAULT_GAP)
+end
+
+-- Accordion dalam section → innerH OTOMATIS dihitung dari isi builderFn
+-- Signature baru: Accordion(title, stateKey, builderFn, opts)
+-- innerH tidak perlu diisi manual lagi
+function Section:Accordion(title, stateKey, builderFn, opts)
+    opts = opts or {}
+    local theme         = self._t
+    local accordionStates = self._as
+    local open          = {accordionStates[stateKey] == true}
+    local yOff          = self._y
+    local parent        = self._c
+
+    -- ── Header ───────────────────────────────────────────────
+    local hdr = Instance.new("TextButton")
+    hdr.Size = UDim2.new(1, -16, 0, 26)
+    hdr.Position = UDim2.new(0, 8, 0, yOff)
+    hdr.BackgroundColor3 = theme.accordionBg
+    hdr.BorderSizePixel = 0
+    hdr.Text = "  " .. title .. (open[1] and "  ▲" or "  ▼")
+    hdr.Font = Enum.Font.GothamBold
+    hdr.TextSize = 10
+    hdr.TextColor3 = theme.accordionTxt
+    hdr.TextXAlignment = Enum.TextXAlignment.Left
+    hdr.ZIndex = 2
+    hdr.Parent = parent
+    mkCorner(hdr, 7)
+
+    -- ── Body (ukuran sementara 0 dulu) ───────────────────────
+    local body = Instance.new("Frame")
+    body.Size = UDim2.new(1, 0, 0, 0)
+    body.Position = UDim2.new(0, 0, 0, yOff + 30)
+    body.BackgroundTransparency = 1
+    body.BorderSizePixel = 0
+    body.ClipsDescendants = true
+    body.Visible = open[1]
+    body.Parent = parent
+
+    -- ── Jalankan builderFn → ukur tinggi otomatis ────────────
+    local inner = Section.new(body, self._mf, theme, accordionStates)
+    if builderFn then builderFn(inner) end
+    local innerH = inner._y + 8   -- padding bawah 8px
+
+    -- Set ukuran body sebenarnya setelah isi dibangun
+    body.Size = UDim2.new(1, 0, 0, innerH)
+
+    -- ── Toggle logic ─────────────────────────────────────────
+    hdr.MouseButton1Click:Connect(function()
+        open[1] = not open[1]
+        if stateKey then accordionStates[stateKey] = open[1] end
+        body.Visible = open[1]
+        hdr.Text = "  " .. title .. (open[1] and "  ▲" or "  ▼")
+        local shift = open[1] and innerH or -innerH
+        local threshold = hdr.Position.Y.Offset + 26
+        for _, child in ipairs(parent:GetChildren()) do
+            if child ~= hdr and child ~= body then
+                if child.Position.Y.Offset > threshold then
+                    child.Position = UDim2.new(
+                        child.Position.X.Scale, child.Position.X.Offset,
+                        0, child.Position.Y.Offset + shift
+                    )
+                end
+            end
+        end
+        parent.CanvasSize = UDim2.new(0, 0, 0, parent.CanvasSize.Y.Offset + shift)
+    end)
+
+    local addedH = 30 + (open[1] and innerH or 0)
+    self._y = yOff + addedH + (opts.gap or 4)
+    return inner
+end
+
+-- Escape hatch: build custom UI langsung ke container
+function Section:Custom(fn)
+    fn(self._c, self._y, self._t)
+end
+
+function Section:_updateCanvas()
+    self._c.CanvasSize = UDim2.new(0, 0, 0, self._y + 10)
+end
+
+-- ============================================================
+-- WINDOW OBJECT
+-- ============================================================
+local Window = {}
+Window.__index = Window
+
+function LuluUI.new(cfg)
+    local self = setmetatable({}, Window)
+    cfg = cfg or {}
+
+    -- Merge theme: default + override dari cfg.theme
+    local theme = {}
+    for k, v in pairs(LuluUI.Theme) do theme[k] = v end
+    if cfg.theme then
+        for k, v in pairs(cfg.theme) do theme[k] = v end
+    end
+    self._theme = theme
+    self._accordionStates = cfg.accordionStates or {}
+
+    -- GUI parent (prioritas: gethui() → CoreGui → PlayerGui)
+    local guiParent = (gethui and gethui())
+        or game:GetService("CoreGui")
+        or Players.LocalPlayer:WaitForChild("PlayerGui")
+
+    -- ── ScreenGui ────────────────────────────────────────────
+    local sg = Instance.new("ScreenGui")
+    sg.Name = cfg.name or "LuluUI"
+    sg.ResetOnSpawn = false
+    sg.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+    sg.Parent = guiParent
+    self.screenGui = sg
+
+    -- Toast
+    self._toastQueue   = {}
+    self._toastRunning = false
+
+    -- ── Lotus Button ─────────────────────────────────────────
+    local lotusBtn = Instance.new("ImageButton")
+    lotusBtn.Size = UDim2.new(0, 65, 0, 65)
+    lotusBtn.Position = cfg.lotusPos or UDim2.new(0, 10, 0, 10)
+    lotusBtn.Image = cfg.icon or "rbxassetid://89098667773873"
+    lotusBtn.BackgroundColor3 = theme.sidebar
+    lotusBtn.BackgroundTransparency = 0.2
+    lotusBtn.BorderSizePixel = 0
+    lotusBtn.Parent = sg
+    mkCorner(lotusBtn, 12)
+    self.lotusBtn = lotusBtn
+
+    -- ── Main Frame ───────────────────────────────────────────
+    local W = cfg.width  or 310
+    local H = cfg.height or 270
+    local mainFrame = Instance.new("Frame")
+    mainFrame.Size = UDim2.new(0, W, 0, H)
+    mainFrame.Position = cfg.position or UDim2.new(0.5, -W / 2, 0.5, -H / 2)
+    mainFrame.BackgroundColor3 = theme.windowBg
+    mainFrame.BackgroundTransparency = 0.8
+    mainFrame.BorderSizePixel = 0
+    mainFrame.Active = true
+    mainFrame.Visible = false
+    mainFrame.Parent = sg
+    mkCorner(mainFrame, 14)
+    self.mainFrame = mainFrame
+
+    -- Shadow
+    local shadow = Instance.new("Frame")
+    shadow.Size = UDim2.new(1, 18, 1, 18)
+    shadow.Position = UDim2.new(0, -9, 0, -9)
+    shadow.BackgroundColor3 = theme.shadow
+    shadow.BackgroundTransparency = 0.88
+    shadow.BorderSizePixel = 0
+    shadow.ZIndex = 0
+    shadow.Parent = mainFrame
+    mkCorner(shadow, 16)
+
+    -- ── Title Bar ────────────────────────────────────────────
+    local titleBar = Instance.new("Frame")
+    titleBar.Size = UDim2.new(1, 0, 0, 36)
+    titleBar.BackgroundColor3 = theme.sidebar
+    titleBar.BackgroundTransparency = 0.2
+    titleBar.BorderSizePixel = 0
+    titleBar.ZIndex = 2
+    titleBar.Parent = mainFrame
+    mkCorner(titleBar, 14)
+    self.titleBar = titleBar
+
+    -- Fix rounded bottom corners titlebar
+    local titleFix = Instance.new("Frame")
+    titleFix.Size = UDim2.new(1, 0, 0, 14)
+    titleFix.Position = UDim2.new(0, 0, 1, -14)
+    titleFix.BackgroundColor3 = theme.sidebar
+    titleFix.BackgroundTransparency = 0.2
+    titleFix.BorderSizePixel = 0
+    titleFix.ZIndex = 1
+    titleFix.Parent = titleBar
+
+    -- Icon di titlebar
+    local titleIcon = Instance.new("ImageLabel")
+    titleIcon.Size = UDim2.new(0, 25, 0, 25)
+    titleIcon.Position = UDim2.new(0, 12, 0.5, -12)
+    titleIcon.BackgroundTransparency = 1
+    titleIcon.Image = cfg.icon or "rbxassetid://89098667773873"
+    titleIcon.ZIndex = 3
+    titleIcon.Parent = titleBar
+
+    -- Judul
+    local titleLabel = Instance.new("TextLabel")
+    titleLabel.Size = UDim2.new(1, -80, 1, 0)
+    titleLabel.Position = UDim2.new(0, 44, 0, 0)
+    titleLabel.BackgroundTransparency = 1
+    titleLabel.Text = cfg.title or "LuluUI"
+    titleLabel.TextColor3 = theme.textWhite
+    titleLabel.Font = Enum.Font.GothamBold
+    titleLabel.TextSize = 13
+    titleLabel.TextXAlignment = Enum.TextXAlignment.Left
+    titleLabel.ZIndex = 3
+    titleLabel.Parent = titleBar
+    self.titleLabel = titleLabel
+
+    -- Close button
+    local closeBtn = Instance.new("TextButton")
+    closeBtn.Size = UDim2.new(0, 28, 0, 28)
+    closeBtn.Position = UDim2.new(1, -34, 0, 4)
+    closeBtn.Text = "×"
+    closeBtn.Font = Enum.Font.GothamBold
+    closeBtn.TextSize = 20
+    closeBtn.BackgroundColor3 = theme.accentDark
+    closeBtn.BackgroundTransparency = 0.1
+    closeBtn.TextColor3 = theme.textWhite
+    closeBtn.BorderSizePixel = 0
+    closeBtn.ZIndex = 3
+    closeBtn.Parent = titleBar
+    mkCorner(closeBtn, 7)
+    makeHover(closeBtn, theme.accentDark, theme.sidebar)
+
+    -- ── Sidebar ──────────────────────────────────────────────
+    local leftPanel = Instance.new("Frame")
+    leftPanel.Size = UDim2.new(0, 90, 1, -36)
+    leftPanel.Position = UDim2.new(0, 0, 0, 36)
+    leftPanel.BackgroundColor3 = theme.sidebarBg
+    leftPanel.BackgroundTransparency = 0.2
+    leftPanel.BorderSizePixel = 0
+    leftPanel.Parent = mainFrame
+    self.leftPanel = leftPanel
+
+    -- ── Content Panel ─────────────────────────────────────────
+    local rightPanel = Instance.new("Frame")
+    rightPanel.Size = UDim2.new(1, -90, 1, -36)
+    rightPanel.Position = UDim2.new(0, 90, 0, 36)
+    rightPanel.BackgroundColor3 = theme.sidebarBg
+    rightPanel.BackgroundTransparency = 0.2
+    rightPanel.BorderSizePixel = 0
+    rightPanel.ClipsDescendants = false
+    rightPanel.Parent = mainFrame
+    self.rightPanel = rightPanel
+
+    -- ScrollingFrame
+    local container = Instance.new("ScrollingFrame")
+    container.Size = UDim2.new(1, -12, 1, -12)
+    container.Position = UDim2.new(0, 6, 0, 6)
+    container.BackgroundTransparency = 1
+    container.BorderSizePixel = 0
+    container.ScrollBarThickness = 4
+    container.ScrollBarImageColor3 = theme.accent
+    container.CanvasSize = UDim2.new(0, 0, 0, 0)
+    container.Parent = rightPanel
+    self.container = container
+
+    -- ── Resize Handle ─────────────────────────────────────────
+    local resizeHandle = Instance.new("Frame")
+    resizeHandle.Size = UDim2.new(0, 14, 0, 14)
+    resizeHandle.AnchorPoint = Vector2.new(1, 1)
+    resizeHandle.Position = UDim2.new(1, -4, 1, -4)
+    resizeHandle.BackgroundColor3 = theme.accent
+    resizeHandle.BackgroundTransparency = 0.4
+    resizeHandle.BorderSizePixel = 0
+    resizeHandle.Parent = mainFrame
+    mkCorner(resizeHandle, 4)
+
+    -- Tab state
+    self._tabs      = {}
+    self._tabBtns   = {}
+    self._activeTab = nil
+    self._tabY      = 8
+
+    -- Setup drag & resize
+    self:_setupDrag(mainFrame, titleBar)
+    self:_setupDrag(lotusBtn, lotusBtn)
+    self:_setupResize(resizeHandle, mainFrame, cfg)
+
+    -- Close
+    closeBtn.MouseButton1Click:Connect(function()
+        TweenService:Create(mainFrame,
+            TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.In),
+            {Size = UDim2.new(0, 0, 0, 0)}
+        ):Play()
+        task.wait(0.31)
+        sg:Destroy()
+    end)
+
+    -- Lotus toggle
+    local normalSize = mainFrame.Size
+    lotusBtn.MouseButton1Click:Connect(function()
+        mainFrame.Visible = not mainFrame.Visible
+        if mainFrame.Visible then
+            mainFrame.Size = UDim2.new(0, 0, 0, 0)
+            TweenService:Create(mainFrame,
+                TweenInfo.new(0.4, Enum.EasingStyle.Back, Enum.EasingDirection.Out),
+                {Size = normalSize}
+            ):Play()
+        end
+        TweenService:Create(lotusBtn, TweenInfo.new(0.3),
+            {Rotation = lotusBtn.Rotation + 180}
+        ):Play()
+    end)
+
+    -- Entrance animation
+    task.spawn(function()
+        task.wait(0.5)
+        lotusBtn.Rotation = -180
+        TweenService:Create(lotusBtn,
+            TweenInfo.new(0.8, Enum.EasingStyle.Elastic),
+            {Rotation = 0}
+        ):Play()
+    end)
+
+    return self
+end
+
+-- ============================================================
+-- DRAG & RESIZE
+-- ============================================================
+function Window:_setupDrag(frame, handle)
+    local dragging, dragStart, startPos
+    handle.InputBegan:Connect(function(inp)
+        if inp.UserInputType == Enum.UserInputType.MouseButton1
+        or inp.UserInputType == Enum.UserInputType.Touch then
+            dragging  = true
+            dragStart = inp.Position
+            startPos  = frame.Position
+            inp.Changed:Connect(function()
+                if inp.UserInputState == Enum.UserInputState.End then
+                    dragging = false
+                end
+            end)
+        end
+    end)
+    UserInputService.InputChanged:Connect(function(inp)
+        if dragging
+        and (inp.UserInputType == Enum.UserInputType.MouseMovement
+          or inp.UserInputType == Enum.UserInputType.Touch) then
+            local d = inp.Position - dragStart
+            frame.Position = UDim2.new(
+                startPos.X.Scale, startPos.X.Offset + d.X,
+                startPos.Y.Scale, startPos.Y.Offset + d.Y
+            )
+        end
+    end)
+end
+
+function Window:_setupResize(handle, frame, cfg)
+    local resizing, initSz, resSt
+    handle.InputBegan:Connect(function(inp)
+        if inp.UserInputType == Enum.UserInputType.MouseButton1
+        or inp.UserInputType == Enum.UserInputType.Touch then
+            resizing = true
+            initSz   = frame.Size
+            resSt    = inp.Position
+            inp.Changed:Connect(function()
+                if inp.UserInputState == Enum.UserInputState.End then
+                    resizing = false
+                end
+            end)
+        end
+    end)
+    UserInputService.InputChanged:Connect(function(inp)
+        if resizing
+        and (inp.UserInputType == Enum.UserInputType.MouseMovement
+          or inp.UserInputType == Enum.UserInputType.Touch) then
+            local d = inp.Position - resSt
+            frame.Size = UDim2.new(
+                0, math.clamp(initSz.X.Offset + d.X, cfg.minW or 260, cfg.maxW or 600),
+                0, math.clamp(initSz.Y.Offset + d.Y, cfg.minH or 220, cfg.maxH or 500)
+            )
+        end
+    end)
+end
+
+-- Expose drag untuk frame external (spy panel, info overlay, dll)
+function Window:Draggable(frame, handle)
+    self:_setupDrag(frame, handle or frame)
+end
+
+-- ============================================================
+-- TAB SYSTEM
+-- ============================================================
+function Window:Tab(name)
+    local theme  = self._theme
+    local yOff   = self._tabY
+
+    -- Sidebar button
+    local btn = Instance.new("TextButton")
+    btn.Size = UDim2.new(1, -10, 0, 30)
+    btn.Position = UDim2.new(0, 5, 0, yOff)
+    btn.BackgroundColor3 = theme.sidebarBg
+    btn.BackgroundTransparency = 1
+    btn.Text = name
+    btn.Font = Enum.Font.GothamBold
+    btn.TextSize = 10
+    btn.TextColor3 = theme.textLight
+    btn.BorderSizePixel = 0
+    btn.Parent = self.leftPanel
+    mkCorner(btn, 7)
+    makeHover(btn, theme.sidebarBg, Color3.fromRGB(180, 130, 200))
+
+    self._tabY = yOff + 36
+
+    -- Tab data
+    local tab = {name = name, btn = btn, _comps = {}}
+    table.insert(self._tabs, tab)
+    table.insert(self._tabBtns, btn)
+
+    btn.MouseButton1Click:Connect(function()
+        self:_setActive(tab)
+    end)
+
+    -- Aktifkan tab pertama otomatis
+    if #self._tabs == 1 then
+        self:_setActive(tab)
+    end
+
+    -- Tab API (builder pattern)
+    local win = self
+    local api = {}
+
+    local function push(fn)
+        table.insert(tab._comps, fn)
+        if win._activeTab == tab then
+            win:_rebuild()
+        end
+    end
+
+    function api:Label(text, opts)
+        push(function(sec) sec:Label(text, opts) end)
+    end
+    function api:Divider(opts)
+        push(function(sec) sec:Divider(opts) end)
+    end
+    function api:Separator(text, opts)
+        push(function(sec) sec:Separator(text, opts) end)
+    end
+    function api:Badge(text, opts)
+        push(function(sec) sec:Badge(text, opts) end)
+    end
+
+    -- CopyButton: return setter proxy (update value dinamis)
+    function api:CopyButton(label, value, opts)
+        local ref = {_setter = nil}
+        push(function(sec) ref._setter = sec:CopyButton(label, value, opts) end)
+        return function(newVal)
+            if ref._setter then ref._setter(newVal) end
+        end
+    end
+
+    -- Button: support opts.confirm langsung (Fix 3)
+    function api:Button(text, cb, opts)
+        push(function(sec) sec:Button(text, cb, opts) end)
+    end
+
+    function api:HalfButtons(tA, tB, cbA, cbB, opts)
+        push(function(sec) sec:HalfButtons(tA, tB, cbA, cbB, opts) end)
+    end
+    function api:Toggle(label, default, cb, opts)
+        push(function(sec) sec:Toggle(label, default, cb, opts) end)
+    end
+    function api:Dropdown(label, options, default, cb, opts)
+        push(function(sec) sec:Dropdown(label, options, default, cb, opts) end)
+    end
+    function api:MultiDropdown(label, options, defaults, cb, opts)
+        push(function(sec) sec:MultiDropdown(label, options, defaults, cb, opts) end)
+    end
+    function api:NumberInput(label, default, step, minV, maxV, cb, opts)
+        push(function(sec) sec:NumberInput(label, default, step, minV, maxV, cb, opts) end)
+    end
+    function api:Segment(label, options, default, cb, opts)
+        push(function(sec) sec:Segment(label, options, default, cb, opts) end)
+    end
+
+    -- TextInput: return proxy → .Text selalu fresh tiap rebuild
+    function api:TextInput(label, default, cb, opts)
+        local ref = {_box = nil}
+        push(function(sec) ref._box = sec:TextInput(label, default, cb, opts) end)
+        return setmetatable({}, {
+            __index    = function(_, k)   if ref._box then return ref._box[k]    end end,
+            __newindex = function(_, k, v) if ref._box then ref._box[k] = v      end end,
+        })
+    end
+
+    -- List: return proxy → api selalu forward ke instance terbaru
+    function api:List(label, opts)
+        local ref = {_api = nil}
+        push(function(sec) ref._api = sec:List(label, opts) end)
+        return {
+            Add     = function(_, r)   if ref._api then ref._api:Add(r)       end end,
+            Remove  = function(_, i)   if ref._api then ref._api:Remove(i)    end end,
+            Clear   = function(_)      if ref._api then ref._api:Clear()       end end,
+            SetRows = function(_, t)   if ref._api then ref._api:SetRows(t)   end end,
+            Count   = function(_)      if ref._api then return ref._api:Count() end return 0 end,
+        }
+    end
+
+    -- ProgressBar: return proxy → :Set/:Get forward ke instance terbaru
+    function api:ProgressBar(label, initVal, opts)
+        local ref = {_api = nil}
+        push(function(sec) ref._api = sec:ProgressBar(label, initVal, opts) end)
+        return {
+            Set = function(_, v) if ref._api then ref._api:Set(v) end end,
+            Get = function(_)    if ref._api then return ref._api:Get() end return 0 end,
+        }
+    end
+
+    -- Accordion: signature baru tanpa innerH
+    function api:Accordion(title, stateKey, builderFn, opts)
+        push(function(sec) sec:Accordion(title, stateKey, builderFn, opts) end)
+    end
+
+    -- Escape hatch: fn(container, y, theme) → raw access
+    function api:Custom(fn)
+        push(function(sec) sec:Custom(fn) end)
+    end
+
+    return api
+end
+
+function Window:_setActive(tab)
+    local theme = self._theme
+    for _, b in ipairs(self._tabBtns) do
+        b.BackgroundColor3 = theme.sidebarBg
+        b.BackgroundTransparency = 1
+        b.TextColor3 = theme.textLight
+    end
+    tab.btn.BackgroundColor3 = Color3.fromRGB(200, 180, 220)
+    tab.btn.BackgroundTransparency = 0.3
+    tab.btn.TextColor3 = Color3.fromRGB(40, 200, 80)
+    self._activeTab = tab
+    self:_rebuild()
+end
+
+function Window:_rebuild()
+    local tab = self._activeTab
+    if not tab then return end
+    for _, c in ipairs(self.container:GetChildren()) do c:Destroy() end
+    local sec = Section.new(self.container, self.mainFrame, self._theme, self._accordionStates)
+    for _, fn in ipairs(tab._comps) do fn(sec) end
+    sec:_updateCanvas()
+end
+
+-- ============================================================
+-- TOAST NOTIFICATION
+-- ============================================================
+function Window:Toast(msg, color)
+    local theme = self._theme
+    color = color or theme.toast
+    table.insert(self._toastQueue, {msg = msg, color = color})
+    if self._toastRunning then return end
+    self._toastRunning = true
+    task.spawn(function()
+        while #self._toastQueue > 0 do
+            local item = table.remove(self._toastQueue, 1)
+
+            local toast = Instance.new("Frame")
+            toast.Size = UDim2.new(0, 220, 0, 36)
+            toast.Position = UDim2.new(1, -10, 1, 10)
+            toast.AnchorPoint = Vector2.new(1, 1)
+            toast.BackgroundColor3 = item.color
+            toast.BackgroundTransparency = 0.1
+            toast.BorderSizePixel = 0
+            toast.ZIndex = 999
+            toast.ClipsDescendants = true
+            toast.Parent = self.screenGui
+            mkCorner(toast, 8)
+
+            local lbl = Instance.new("TextLabel")
+            lbl.Size = UDim2.new(1, -16, 1, 0)
+            lbl.Position = UDim2.new(0, 8, 0, 0)
+            lbl.BackgroundTransparency = 1
+            lbl.Text = item.msg
+            lbl.Font = Enum.Font.GothamBold
+            lbl.TextSize = 11
+            lbl.TextColor3 = Color3.fromRGB(255, 255, 255)
+            lbl.TextXAlignment = Enum.TextXAlignment.Left
+            lbl.TextTruncate = Enum.TextTruncate.AtEnd
+            lbl.ZIndex = 1000
+            lbl.Parent = toast
+
+            TweenService:Create(toast,
+                TweenInfo.new(0.25, Enum.EasingStyle.Back, Enum.EasingDirection.Out),
+                {Position = UDim2.new(1, -10, 1, -10)}
+            ):Play()
+            task.wait(2.8)
+            TweenService:Create(toast,
+                TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.In),
+                {Position = UDim2.new(1, -10, 1, 10)}
+            ):Play()
+            task.wait(0.22)
+            pcall(function() toast:Destroy() end)
+            task.wait(0.1)
+        end
+        self._toastRunning = false
+    end)
+end
+
+-- ============================================================
+-- INFO PANEL (overlay kanan atas, optional)
+-- ============================================================
+function Window:InfoPanel(cfg)
+    cfg = cfg or {}
+    local theme = self._theme
+
+    local panel = Instance.new("Frame")
+    panel.Size = UDim2.new(0, cfg.width or 180, 0, cfg.height or 100)
+    panel.Position = cfg.position or UDim2.new(1, -190, 0, 10)
+    panel.BackgroundColor3 = cfg.bg or Color3.fromRGB(15, 20, 35)
+    panel.BackgroundTransparency = 0.2
+    panel.BorderSizePixel = 0
+    panel.Visible = cfg.visible ~= false
+    panel.Parent = self.screenGui
+    mkCorner(panel, 10)
+    self:_setupDrag(panel, panel)
+
+    local api = {frame = panel, _y = 4}
+
+    function api:Line(text)
+        local l = Instance.new("TextLabel")
+        l.Size = UDim2.new(1, -10, 0, 16)
+        l.Position = UDim2.new(0, 6, 0, self._y)
+        l.BackgroundTransparency = 1
+        l.Text = text
+        l.Font = Enum.Font.GothamBold
+        l.TextSize = 10
+        l.TextColor3 = Color3.fromRGB(200, 220, 255)
+        l.TextXAlignment = Enum.TextXAlignment.Left
+        l.TextTruncate = Enum.TextTruncate.AtEnd
+        l.Parent = panel
+        self._y = self._y + 18
+        return l  -- caller bisa update .Text langsung
+    end
+
+    function api:Show() panel.Visible = true  end
+    function api:Hide() panel.Visible = false end
+    function api:Toggle() panel.Visible = not panel.Visible end
+
+    return api
+end
+
+-- ============================================================
+-- SETTERS
+-- ============================================================
+function Window:SetTitle(text)
+    self.titleLabel.Text = text
+end
+
+-- Shortcut confirm dialog langsung dari window
+-- win:Confirm("Judul", "Pesan?", function() ... end)
+function Window:Confirm(title, message, onConfirm, onCancel)
+    _showConfirm(self.mainFrame, title, message, onConfirm, onCancel, self._theme)
+end
+
+function Window:Destroy()
+    self.screenGui:Destroy()
+end
+
+-- ============================================================
+return LuluUI
+-- ============================================================
+
+--[[
+═══════════════════════════════════════════════════════════════
+  How To Use Lulu-Ui
+═══════════════════════════════════════════════════════════════
+
+local LuluUI = loadstring(game:HttpGet("URL_KE_FILE_INI"))()
+
+-- (Opsional) Override tema sebelum buat window
+LuluUI.Theme.sidebar    = Color3.fromRGB(0, 100, 60)
+LuluUI.Theme.sidebarBg  = Color3.fromRGB(0, 80, 50)
+LuluUI.Theme.accentDark = Color3.fromRGB(0, 60, 40)
+
+-- Buat window
+local win = LuluUI.new({
+    title  = "Fish Brainrot V2",
+    name   = "FishBrainrotGui",
+    width  = 310,
+    height = 270,
+    -- icon  = "rbxassetid://...",  -- optional ganti icon
+    -- position = UDim2.new(0.5, -155, 0.5, -135),
+    -- theme = { accent = Color3.fromRGB(255, 80, 40) },  -- per-window override
+})
+
+-- Info overlay (kanan atas)
+local info = win:InfoPanel({height = 80})
+local lbl_status = info:Line("Status : idle")
+local lbl_count  = info:Line("Count  : 0")
+-- Update dari game logic: lbl_status.Text = "Status : fishing"
+
+-- ── Tab: Main ────────────────────────────────────────────────
+local tabMain = win:Tab("Main")
+
+tabMain:Segment("Mode", {"Normal", "Mid", "Risk"}, "Normal", function(v)
+    selectedMode = v
+end)
+
+tabMain:Toggle("Auto Fish", false, function(v)
+    if v then startFishing() else stopFishing() end
+end)
+
+tabMain:HalfButtons("▶ Start", "■ Stop",
+    function() startFishing() end,
+    function() stopFishing()  end
+)
+
+tabMain:Dropdown("Rarity Filter", {"All","Rare","Epic","Legendary"}, "All", function(v)
+    rarityFilter = v
+end)
+
+-- Multi-select: pilih beberapa rarity sekaligus
+tabMain:MultiDropdown("Sell Rarity", {"Common","Rare","Epic","Legendary"}, {"Common"}, function(selected)
+    -- selected = {"Common", "Rare"}  ← tabel semua yang dicentang
+    sellRarities = selected
+end)
+
+tabMain:Accordion("Advanced", "mainAdv", function(sec)
+    sec:NumberInput("Delay (s)", 1.2, 0.1, 0.1, 5.0, function(v) CFG.Delay = v end)
+    sec:NumberInput("Speed", 0.25, 0.05, 0.05, 2.0, function(v) CFG.Speed = v end)
+    sec:Toggle("Auto Sell", true, function(v) autoSell = v end)
+end)
+
+-- TextInput: return proxy, bisa diupdate dari luar
+local boxWebhook = tabMain:TextInput("Webhook Discord", "", function(text)
+    SPY_WEBHOOK = text
+    win:Toast("Webhook disimpan!", Color3.fromRGB(40, 180, 80))
+end, {placeholder = "https://discord.com/api/webhooks/..."})
+-- boxWebhook.Text = "nilai baru"  ← tetap valid walau tab di-rebuild
+
+-- ── Tab: Log ─────────────────────────────────────────────────
+local tabLog = win:Tab("Log")
+
+-- ProgressBar: return proxy, update dari game logic kapan saja
+local barVocab = tabLog:ProgressBar("Vocab loaded", 0)
+-- barVocab:Set(75)   → bar ke 75%
+-- barVocab:Set(100)  → penuh, hijau
+
+-- List multi kolom: return proxy
+local listWords = tabLog:List("Kata terpakai", {
+    height  = 130,
+    columns = {"Kata", "Prefix", "Mode"},
+})
+-- listWords:Add({"ambil", "am", "Normal"})
+-- listWords:Clear()
+
+-- List single kolom
+local listSpy = tabLog:List("Spy words", {height = 100})
+-- listSpy:Add("komputer")
+
+-- ── Tab: Settings ────────────────────────────────────────────
+local tabSett = win:Tab("Settings")
+
+tabSett:Toggle("Disable 3D", false, function(v)
+    workspace.StreamingEnabled = not v
+end)
+
+-- Separator berlabel
+tabSett:Separator("Danger Zone")
+
+-- Button dengan confirm dialog (tidak langsung jalan)
+tabSett:Button("Reset Stats", function()
+    totalCaught = 0
+    win:Toast("Stats direset!", Color3.fromRGB(40, 180, 80))
+end, {
+    color   = Color3.fromRGB(180, 60, 60),
+    confirm = {
+        title   = "Reset Stats?",
+        message = "Semua data akan dihapus.",
+    }
+})
+
+-- Confirm dari luar widget (shortcut window)
+-- win:Confirm("Judul", "Pesan?", function() ... end)
+
+-- ── Tab: Info ────────────────────────────────────────────────
+local tabInfo = win:Tab("Info")
+
+-- Badge versi
+tabInfo:Badge("V2", {color = Color3.fromRGB(255, 140, 0)})
+tabInfo:Badge("BETA", {color = Color3.fromRGB(40, 120, 255)})
+
+tabInfo:Separator("Script Info")
+tabInfo:Label("Fish Brainrot V2", {size = 14, bold = true})
+tabInfo:Label("by YtLuluv1", {size = 10, color = Color3.fromRGB(150,150,180)})
+tabInfo:Divider()
+
+-- Copy button — satu klik langsung copy ke clipboard
+tabInfo:CopyButton("Discord", "https://discord.gg/ytluluv1")
+tabInfo:CopyButton("GitHub",  "https://github.com/ytlulu")
+
+tabInfo:Button("Join Discord", function()
+    pcall(function() setclipboard("https://discord.gg/ytluluv1") end)
+    win:Toast("Link disalin!", Color3.fromRGB(88, 101, 242))
+end, {color = Color3.fromRGB(88, 101, 242)})
+
+═══════════════════════════════════════════════════════════════
+]]
