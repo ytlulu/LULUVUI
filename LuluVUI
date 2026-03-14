@@ -15,29 +15,228 @@ local UserInputService = game:GetService("UserInputService")
 local Players          = game:GetService("Players")
 
 -- ============================================================
--- DEFAULT THEME
--- Bisa di-override sebelum LuluUI.new() dipanggil:
---   LuluUI.Theme.sidebar = Color3.fromRGB(0, 100, 120)
+-- THEME PRESETS
+-- Pilih tema: LuluUI.SetTheme("Ocean")
+-- Atau override manual: LuluUI.Theme.accent = Color3.fromRGB(...)
 -- ============================================================
-LuluUI.Theme = {
-    accent       = Color3.fromRGB(40,  120, 255),
-    accentDark   = Color3.fromRGB(70,  0,   90),
-    sidebar      = Color3.fromRGB(100, 0,   120),
-    sidebarBg    = Color3.fromRGB(128, 0,   128),
-    windowBg     = Color3.fromRGB(255, 255, 255),
-    contentBg    = Color3.fromRGB(245, 247, 252),
-    text         = Color3.fromRGB(40,  50,  70),
-    textLight    = Color3.fromRGB(200, 200, 220),
-    textWhite    = Color3.fromRGB(255, 255, 255),
-    toggleOn     = Color3.fromRGB(40,  180, 80),
-    toggleOff    = Color3.fromRGB(190, 195, 210),
-    divider      = Color3.fromRGB(220, 225, 235),
-    shadow       = Color3.fromRGB(20,  90,  200),
-    accordionBg  = Color3.fromRGB(235, 238, 248),
-    accordionTxt = Color3.fromRGB(100, 110, 140),
-    segmentOff   = Color3.fromRGB(160, 165, 180),
-    toast        = Color3.fromRGB(30,  30,  40),
+
+-- Helper internal: buat Color3 ringkas
+local function rgb(r,g,b) return Color3.fromRGB(r,g,b) end
+
+LuluUI.Themes = {
+
+    -- ── Purple (default) ──────────────────────────────────────
+    Purple = {
+        accent       = rgb(40,  120, 255),
+        accentDark   = rgb(70,  0,   90),
+        sidebar      = rgb(100, 0,   120),
+        sidebarBg    = rgb(128, 0,   128),
+        windowBg     = rgb(255, 255, 255),
+        contentBg    = rgb(245, 247, 252),
+        text         = rgb(40,  50,  70),
+        textLight    = rgb(200, 200, 220),
+        textWhite    = rgb(255, 255, 255),
+        toggleOn     = rgb(40,  180, 80),
+        toggleOff    = rgb(190, 195, 210),
+        divider      = rgb(220, 225, 235),
+        shadow       = rgb(20,  90,  200),
+        accordionBg  = rgb(235, 238, 248),
+        accordionTxt = rgb(100, 110, 140),
+        segmentOff   = rgb(160, 165, 180),
+        toast        = rgb(30,  30,  40),
+    },
+
+    -- ── Ocean (Dark Blue) ─────────────────────────────────────
+    Ocean = {
+        accent       = rgb(0,   180, 255),
+        accentDark   = rgb(0,   40,  80),
+        sidebar      = rgb(0,   60,  110),
+        sidebarBg    = rgb(0,   80,  140),
+        windowBg     = rgb(240, 248, 255),
+        contentBg    = rgb(232, 244, 252),
+        text         = rgb(20,  40,  70),
+        textLight    = rgb(160, 200, 230),
+        textWhite    = rgb(255, 255, 255),
+        toggleOn     = rgb(0,   200, 180),
+        toggleOff    = rgb(160, 190, 210),
+        divider      = rgb(200, 220, 240),
+        shadow       = rgb(0,   120, 200),
+        accordionBg  = rgb(220, 238, 252),
+        accordionTxt = rgb(60,  100, 150),
+        segmentOff   = rgb(120, 160, 195),
+        toast        = rgb(10,  30,  55),
+    },
+
+    -- ── Matrix (Green) ────────────────────────────────────────
+    Matrix = {
+        accent       = rgb(0,   210, 100),
+        accentDark   = rgb(0,   50,  20),
+        sidebar      = rgb(0,   80,  30),
+        sidebarBg    = rgb(0,   100, 40),
+        windowBg     = rgb(240, 252, 244),
+        contentBg    = rgb(230, 248, 236),
+        text         = rgb(20,  50,  30),
+        textLight    = rgb(140, 210, 160),
+        textWhite    = rgb(255, 255, 255),
+        toggleOn     = rgb(0,   210, 100),
+        toggleOff    = rgb(150, 190, 160),
+        divider      = rgb(190, 230, 200),
+        shadow       = rgb(0,   150, 60),
+        accordionBg  = rgb(215, 242, 222),
+        accordionTxt = rgb(40,  110, 60),
+        segmentOff   = rgb(100, 170, 120),
+        toast        = rgb(10,  40,  20),
+    },
+
+    -- ── Crimson (Red) ─────────────────────────────────────────
+    Crimson = {
+        accent       = rgb(220, 40,  60),
+        accentDark   = rgb(90,  0,   15),
+        sidebar      = rgb(140, 10,  30),
+        sidebarBg    = rgb(170, 20,  40),
+        windowBg     = rgb(255, 248, 248),
+        contentBg    = rgb(252, 240, 242),
+        text         = rgb(60,  20,  25),
+        textLight    = rgb(230, 180, 185),
+        textWhite    = rgb(255, 255, 255),
+        toggleOn     = rgb(220, 40,  60),
+        toggleOff    = rgb(210, 175, 178),
+        divider      = rgb(240, 210, 215),
+        shadow       = rgb(180, 20,  40),
+        accordionBg  = rgb(252, 228, 232),
+        accordionTxt = rgb(140, 60,  70),
+        segmentOff   = rgb(195, 140, 145),
+        toast        = rgb(50,  10,  15),
+    },
+
+    -- ── Luxury (Gold) ─────────────────────────────────────────
+    Luxury = {
+        accent       = rgb(200, 155, 40),
+        accentDark   = rgb(70,  45,  0),
+        sidebar      = rgb(100, 70,  0),
+        sidebarBg    = rgb(130, 95,  10),
+        windowBg     = rgb(255, 253, 242),
+        contentBg    = rgb(252, 248, 232),
+        text         = rgb(55,  40,  10),
+        textLight    = rgb(220, 195, 130),
+        textWhite    = rgb(255, 255, 255),
+        toggleOn     = rgb(200, 155, 40),
+        toggleOff    = rgb(200, 185, 145),
+        divider      = rgb(235, 220, 180),
+        shadow       = rgb(160, 120, 20),
+        accordionBg  = rgb(248, 238, 205),
+        accordionTxt = rgb(130, 100, 30),
+        segmentOff   = rgb(185, 165, 100),
+        toast        = rgb(45,  30,  5),
+    },
+
+    -- ── Sakura (Pink) ─────────────────────────────────────────
+    Sakura = {
+        accent       = rgb(230, 80,  150),
+        accentDark   = rgb(100, 20,  60),
+        sidebar      = rgb(170, 40,  100),
+        sidebarBg    = rgb(200, 60,  120),
+        windowBg     = rgb(255, 248, 252),
+        contentBg    = rgb(252, 238, 248),
+        text         = rgb(60,  25,  45),
+        textLight    = rgb(235, 175, 210),
+        textWhite    = rgb(255, 255, 255),
+        toggleOn     = rgb(230, 80,  150),
+        toggleOff    = rgb(215, 175, 200),
+        divider      = rgb(242, 215, 232),
+        shadow       = rgb(190, 50,  120),
+        accordionBg  = rgb(252, 228, 244),
+        accordionTxt = rgb(155, 70,  115),
+        segmentOff   = rgb(205, 155, 185),
+        toast        = rgb(55,  15,  40),
+    },
+
+    -- ── White (Light Mode bersih) ─────────────────────────────
+    White = {
+        accent       = rgb(60,  130, 255),
+        accentDark   = rgb(30,  70,  180),
+        sidebar      = rgb(60,  70,  90),
+        sidebarBg    = rgb(75,  85,  105),
+        windowBg     = rgb(255, 255, 255),
+        contentBg    = rgb(248, 249, 252),
+        text         = rgb(30,  35,  50),
+        textLight    = rgb(190, 195, 210),
+        textWhite    = rgb(255, 255, 255),
+        toggleOn     = rgb(50,  185, 90),
+        toggleOff    = rgb(185, 190, 205),
+        divider      = rgb(225, 228, 238),
+        shadow       = rgb(50,  100, 200),
+        accordionBg  = rgb(240, 242, 250),
+        accordionTxt = rgb(100, 108, 135),
+        segmentOff   = rgb(155, 162, 180),
+        toast        = rgb(30,  32,  45),
+    },
+
+    -- ── Dark (Dark Mode gelap) ────────────────────────────────
+    Dark = {
+        accent       = rgb(80,  150, 255),
+        accentDark   = rgb(30,  50,  110),
+        sidebar      = rgb(25,  28,  40),
+        sidebarBg    = rgb(32,  35,  50),
+        windowBg     = rgb(20,  22,  32),
+        contentBg    = rgb(30,  33,  48),
+        text         = rgb(210, 215, 230),
+        textLight    = rgb(100, 110, 140),
+        textWhite    = rgb(235, 238, 248),
+        toggleOn     = rgb(60,  190, 100),
+        toggleOff    = rgb(70,  78,  100),
+        divider      = rgb(50,  55,  75),
+        shadow       = rgb(60,  120, 230),
+        accordionBg  = rgb(38,  42,  60),
+        accordionTxt = rgb(130, 140, 170),
+        segmentOff   = rgb(75,  83,  110),
+        toast        = rgb(18,  20,  30),
+    },
+
+    -- ── Tosca (Teal/Cyan) ─────────────────────────────────────
+    Tosca = {
+        accent       = rgb(0,   185, 175),
+        accentDark   = rgb(0,   65,  65),
+        sidebar      = rgb(0,   110, 105),
+        sidebarBg    = rgb(0,   135, 128),
+        windowBg     = rgb(240, 253, 252),
+        contentBg    = rgb(228, 250, 248),
+        text         = rgb(15,  50,  48),
+        textLight    = rgb(140, 210, 205),
+        textWhite    = rgb(255, 255, 255),
+        toggleOn     = rgb(0,   185, 175),
+        toggleOff    = rgb(145, 195, 192),
+        divider      = rgb(190, 235, 232),
+        shadow       = rgb(0,   150, 140),
+        accordionBg  = rgb(210, 245, 242),
+        accordionTxt = rgb(30,  115, 110),
+        segmentOff   = rgb(100, 175, 170),
+        toast        = rgb(5,   40,  38),
+    },
 }
+
+-- Tema aktif default = Purple
+LuluUI.Theme = LuluUI.Themes.Purple
+
+-- ── SetTheme: ganti tema aktif secara global ──────────────────
+-- Dipanggil SEBELUM LuluUI.new()
+-- Contoh: LuluUI.SetTheme("Ocean")
+function LuluUI.SetTheme(name)
+    local t = LuluUI.Themes[name]
+    assert(t, "LuluUI.SetTheme: tema '" .. tostring(name) .. "' tidak ditemukan.\n"
+        .. "Tema tersedia: Purple, Ocean, Matrix, Crimson, Luxury, Sakura, White, Dark, Tosca")
+    LuluUI.Theme = t
+end
+
+-- ── GetThemes: return list nama tema yang tersedia ────────────
+function LuluUI.GetThemes()
+    local list = {}
+    for name in pairs(LuluUI.Themes) do
+        table.insert(list, name)
+    end
+    table.sort(list)
+    return list
+end
 
 -- ============================================================
 -- INTERNAL PRIMITIVE HELPERS
@@ -99,9 +298,13 @@ local function _mkDivider(parent, yOff, theme)
     return d, 1
 end
 
--- Tombol penuh
-local function _mkBtn(parent, text, yOff, h, col, theme)
+-- opts.loading → string teks saat loading (misal "Loading...")
+--                kalau ada, callback menerima fn done() → panggil untuk balik normal
+local function _mkBtn(parent, text, yOff, h, col, theme, opts)
+    opts = opts or {}
     col = col or theme.accent
+    local loadingText = opts.loading  -- nil = tidak ada loading state
+
     local b = Instance.new("TextButton")
     b.Size = UDim2.new(1, -16, 0, h or 30)
     b.Position = UDim2.new(0, 8, 0, yOff)
@@ -154,31 +357,67 @@ local function _mkHalfBtns(parent, textA, textB, yOff, h, colA, colB, theme)
 end
 
 -- Toggle switch
-local function _mkToggle(parent, label, yOff, default, callback, theme)
+-- opts.subtext  → string, kalau ada maka tinggi 48px dan ada subtext di bawah label
+-- opts.disabled → bool, kalau true: greyed out, tidak bisa diklik
+local function _mkToggle(parent, label, yOff, default, callback, theme, opts)
+    opts = opts or {}
+    local subtext  = opts.subtext
+    local disabled = opts.disabled == true
+    local totalH   = subtext and 48 or 28
+
     local state = {default}
     local bg = Instance.new("Frame")
-    bg.Size = UDim2.new(1, -16, 0, 32)
+    bg.Size = UDim2.new(1, -16, 0, totalH)
     bg.Position = UDim2.new(0, 8, 0, yOff)
-    bg.BackgroundColor3 = theme.contentBg
+    bg.BackgroundColor3 = disabled and theme.divider or theme.contentBg
     bg.BorderSizePixel = 0
     bg.Parent = parent
     mkCorner(bg, 8)
 
-    local lbl = Instance.new("TextLabel")
-    lbl.Size = UDim2.new(1, -60, 1, 0)
-    lbl.Position = UDim2.new(0, 10, 0, 0)
-    lbl.BackgroundTransparency = 1
-    lbl.Text = label
-    lbl.Font = Enum.Font.Gotham
-    lbl.TextSize = 12
-    lbl.TextColor3 = theme.text
-    lbl.TextXAlignment = Enum.TextXAlignment.Left
-    lbl.Parent = bg
+    local textColor = disabled and theme.accordionTxt or theme.text
 
+    if subtext then
+        local lbl = Instance.new("TextLabel")
+        lbl.Size = UDim2.new(1, -60, 0, 18)
+        lbl.Position = UDim2.new(0, 10, 0, 8)
+        lbl.BackgroundTransparency = 1
+        lbl.Text = label
+        lbl.Font = Enum.Font.GothamBold
+        lbl.TextSize = 13
+        lbl.TextColor3 = textColor
+        lbl.TextXAlignment = Enum.TextXAlignment.Left
+        lbl.Parent = bg
+
+        local sub = Instance.new("TextLabel")
+        sub.Size = UDim2.new(1, -60, 0, 14)
+        sub.Position = UDim2.new(0, 10, 0, 27)
+        sub.BackgroundTransparency = 1
+        sub.Text = subtext
+        sub.Font = Enum.Font.Gotham
+        sub.TextSize = 10
+        sub.TextColor3 = theme.accordionTxt
+        sub.TextXAlignment = Enum.TextXAlignment.Left
+        sub.Parent = bg
+    else
+        local lbl = Instance.new("TextLabel")
+        lbl.Size = UDim2.new(1, -60, 1, 0)
+        lbl.Position = UDim2.new(0, 10, 0, 0)
+        lbl.BackgroundTransparency = 1
+        lbl.Text = label
+        lbl.Font = Enum.Font.Gotham
+        lbl.TextSize = 12
+        lbl.TextColor3 = textColor
+        lbl.TextXAlignment = Enum.TextXAlignment.Left
+        lbl.Parent = bg
+    end
+
+    -- Track & knob — kalau disabled, warna pudar
+    local trackColor = disabled and theme.divider
+        or (default and theme.toggleOn or theme.toggleOff)
     local track = Instance.new("Frame")
     track.Size = UDim2.new(0, 38, 0, 20)
     track.Position = UDim2.new(1, -46, 0.5, -10)
-    track.BackgroundColor3 = default and theme.toggleOn or theme.toggleOff
+    track.BackgroundColor3 = trackColor
     track.BorderSizePixel = 0
     track.Parent = bg
     mkCorner(track, 10)
@@ -186,30 +425,33 @@ local function _mkToggle(parent, label, yOff, default, callback, theme)
     local knob = Instance.new("Frame")
     knob.Size = UDim2.new(0, 16, 0, 16)
     knob.Position = default and UDim2.new(0, 20, 0.5, -8) or UDim2.new(0, 2, 0.5, -8)
-    knob.BackgroundColor3 = theme.textWhite
+    knob.BackgroundColor3 = disabled and theme.accordionTxt or theme.textWhite
     knob.BorderSizePixel = 0
     knob.Parent = track
     mkCorner(knob, 8)
 
-    local btn = Instance.new("TextButton")
-    btn.Size = UDim2.new(1, 0, 1, 0)
-    btn.BackgroundTransparency = 1
-    btn.Text = ""
-    btn.Parent = bg
+    -- Transparent overlay untuk clickable area — skip kalau disabled
+    if not disabled then
+        local btn = Instance.new("TextButton")
+        btn.Size = UDim2.new(1, 0, 1, 0)
+        btn.BackgroundTransparency = 1
+        btn.Text = ""
+        btn.Parent = bg
 
-    btn.MouseButton1Click:Connect(function()
-        state[1] = not state[1]
-        local on = state[1]
-        TweenService:Create(track, TweenInfo.new(0.2), {
-            BackgroundColor3 = on and theme.toggleOn or theme.toggleOff
-        }):Play()
-        TweenService:Create(knob, TweenInfo.new(0.2), {
-            Position = on and UDim2.new(0, 20, 0.5, -8) or UDim2.new(0, 2, 0.5, -8)
-        }):Play()
-        if callback then callback(on) end
-    end)
+        btn.MouseButton1Click:Connect(function()
+            state[1] = not state[1]
+            local on = state[1]
+            TweenService:Create(track, TweenInfo.new(0.2), {
+                BackgroundColor3 = on and theme.toggleOn or theme.toggleOff
+            }):Play()
+            TweenService:Create(knob, TweenInfo.new(0.2), {
+                Position = on and UDim2.new(0, 20, 0.5, -8) or UDim2.new(0, 2, 0.5, -8)
+            }):Play()
+            if callback then callback(on) end
+        end)
+    end
 
-    return bg, 32
+    return bg, totalH
 end
 
 -- Dropdown
@@ -225,8 +467,9 @@ local function _mkDropdown(parent, mainFrame, label, options, default, yOff, cal
     bg.Parent = parent
     mkCorner(bg, 8)
 
+    -- Label kiri: fix 40% lebar
     local lbl = Instance.new("TextLabel")
-    lbl.Size = UDim2.new(0.55, 0, 1, 0)
+    lbl.Size = UDim2.new(0.4, -14, 1, 0)
     lbl.Position = UDim2.new(0, 10, 0, 0)
     lbl.BackgroundTransparency = 1
     lbl.Text = label
@@ -234,17 +477,20 @@ local function _mkDropdown(parent, mainFrame, label, options, default, yOff, cal
     lbl.TextSize = 12
     lbl.TextColor3 = theme.text
     lbl.TextXAlignment = Enum.TextXAlignment.Left
+    lbl.TextTruncate = Enum.TextTruncate.AtEnd
     lbl.Parent = bg
 
+    -- Tombol kanan: stretch ngikut sisa lebar row
     local valBtn = Instance.new("TextButton")
-    valBtn.Size = UDim2.new(0, 100, 0, 24)
-    valBtn.Position = UDim2.new(1, -108, 0.5, -12)
+    valBtn.Size = UDim2.new(0.6, -14, 0, 24)
+    valBtn.Position = UDim2.new(0.4, 6, 0.5, -12)
     valBtn.BackgroundColor3 = theme.accent
     valBtn.Text = default .. " ▾"
     valBtn.Font = Enum.Font.GothamBold
     valBtn.TextSize = 11
     valBtn.TextColor3 = theme.textWhite
     valBtn.BorderSizePixel = 0
+    valBtn.TextTruncate = Enum.TextTruncate.AtEnd
     valBtn.Parent = bg
     mkCorner(valBtn, 6)
 
@@ -342,8 +588,9 @@ local function _mkMultiDropdown(parent, mainFrame, label, options, defaults, yOf
     bg.Parent = parent
     mkCorner(bg, 8)
 
+    -- Label kiri: fix 40% lebar
     local lbl = Instance.new("TextLabel")
-    lbl.Size = UDim2.new(0.5, 0, 1, 0)
+    lbl.Size = UDim2.new(0.4, -14, 1, 0)
     lbl.Position = UDim2.new(0, 10, 0, 0)
     lbl.BackgroundTransparency = 1
     lbl.Text = label
@@ -351,15 +598,17 @@ local function _mkMultiDropdown(parent, mainFrame, label, options, defaults, yOf
     lbl.TextSize = 12
     lbl.TextColor3 = theme.text
     lbl.TextXAlignment = Enum.TextXAlignment.Left
+    lbl.TextTruncate = Enum.TextTruncate.AtEnd
     lbl.Parent = bg
 
+    -- Tombol kanan: stretch ngikut sisa lebar row
     local valBtn = Instance.new("TextButton")
-    valBtn.Size = UDim2.new(0, 110, 0, 24)
-    valBtn.Position = UDim2.new(1, -118, 0.5, -12)
+    valBtn.Size = UDim2.new(0.6, -14, 0, 24)
+    valBtn.Position = UDim2.new(0.4, 6, 0.5, -12)
     valBtn.BackgroundColor3 = theme.accent
     valBtn.Text = getLabel()
     valBtn.Font = Enum.Font.GothamBold
-    valBtn.TextSize = 10
+    valBtn.TextSize = 11
     valBtn.TextColor3 = theme.textWhite
     valBtn.BorderSizePixel = 0
     valBtn.TextTruncate = Enum.TextTruncate.AtEnd
@@ -1268,12 +1517,13 @@ end
 local Section = {}
 Section.__index = Section
 
+-- accordionStates sekarang optional — kalau nil, library auto-manage internal
 function Section.new(container, mainFrame, theme, accordionStates)
     return setmetatable({
         _c  = container,
         _mf = mainFrame,
         _t  = theme,
-        _as = accordionStates,
+        _as = accordionStates or {},   -- auto-create kalau tidak dikasih
         _y  = 0,
     }, Section)
 end
@@ -1317,30 +1567,52 @@ function Section:CopyButton(label, value, opts)
     return setter
 end
 
--- Confirm dialog — muncul popup sebelum aksi destruktif
--- callback dipanggil kalau user klik "Ya, lanjut"
--- opts.title, opts.message, opts.onCancel
+-- opts.color, opts.height, opts.confirm, opts.loading
+-- Kalau opts.loading ada → callback dipanggil dengan fn done()
+--   contoh: tab:Button("Load", function(done) loadKata(); done() end, {loading="Loading..."})
 function Section:Button(text, callback, opts)
     opts = opts or {}
-    local h = opts.height or 30
-    local confirm = opts.confirm  -- {title="...", message="..."}
-    local b = _mkBtn(self._c, text, self._y, h, opts.color, self._t)
+    local h           = opts.height or 30
+    local confirm     = opts.confirm
+    local loadingText = opts.loading   -- teks saat proses, nil = tidak ada loading state
+    local col         = opts.color or self._t.accent
+
+    local b, _ = _mkBtn(self._c, text, self._y, h, col, self._t, opts)
+
     if callback then
         b.MouseButton1Click:Connect(function()
+            local function doAction()
+                if loadingText then
+                    -- Masuk loading state
+                    b.Text = loadingText
+                    b.BackgroundColor3 = self._t.accordionTxt
+                    b.AutoButtonColor = false
+                    local done = function()
+                        b.Text = text
+                        b.BackgroundColor3 = col
+                        b.AutoButtonColor = true
+                    end
+                    task.spawn(function() callback(done) end)
+                else
+                    callback()
+                end
+            end
+
             if confirm then
                 _showConfirm(
                     self._mf,
                     confirm.title   or "Konfirmasi",
                     confirm.message or "Lanjutkan aksi ini?",
-                    callback,
+                    doAction,
                     opts.onCancel,
                     self._t
                 )
             else
-                callback()
+                doAction()
             end
         end)
     end
+
     self._y = self._y + h + (opts.gap or DEFAULT_GAP)
     return b
 end
@@ -1358,8 +1630,8 @@ end
 
 function Section:Toggle(label, default, callback, opts)
     opts = opts or {}
-    _mkToggle(self._c, label, self._y, default, callback, self._t)
-    self._y = self._y + 32 + (opts.gap or DEFAULT_GAP)
+    local _, h = _mkToggle(self._c, label, self._y, default, callback, self._t, opts)
+    self._y = self._y + h + (opts.gap or DEFAULT_GAP)
 end
 
 function Section:Dropdown(label, options, default, callback, opts)
@@ -1421,16 +1693,30 @@ function Section:Segment(label, options, default, callback, opts)
     self._y = self._y + 52 + (opts.gap or DEFAULT_GAP)
 end
 
--- Accordion dalam section → innerH OTOMATIS dihitung dari isi builderFn
--- Signature baru: Accordion(title, stateKey, builderFn, opts)
--- innerH tidak perlu diisi manual lagi
-function Section:Accordion(title, stateKey, builderFn, opts)
-    opts = opts or {}
-    local theme         = self._t
+-- Accordion auto-managed:
+-- stateKey sekarang OPSIONAL — kalau nil, library auto-generate key unik
+-- Signature lama: Accordion(title, stateKey, builderFn, opts) → tetap kompatibel
+-- Signature baru: Accordion(title, builderFn, opts) → stateKey auto
+function Section:Accordion(title, stateKeyOrFn, builderFnOrOpts, opts)
+    -- Deteksi signature: kalau arg ke-2 adalah function → signature baru
+    local stateKey, builderFn
+    if type(stateKeyOrFn) == "function" then
+        -- Signature baru: Accordion(title, builderFn, opts)
+        stateKey  = "acc_" .. tostring(self._y) .. "_" .. title:gsub("%s","")
+        builderFn = stateKeyOrFn
+        opts      = builderFnOrOpts or {}
+    else
+        -- Signature lama: Accordion(title, stateKey, builderFn, opts)
+        stateKey  = stateKeyOrFn or ("acc_" .. tostring(self._y) .. "_" .. title:gsub("%s",""))
+        builderFn = builderFnOrOpts
+        opts      = opts or {}
+    end
+
+    local theme           = self._t
     local accordionStates = self._as
-    local open          = {accordionStates[stateKey] == true}
-    local yOff          = self._y
-    local parent        = self._c
+    local open            = {accordionStates[stateKey] == true}
+    local yOff            = self._y
+    local parent          = self._c
 
     -- ── Header ───────────────────────────────────────────────
     local hdr = Instance.new("TextButton")
@@ -1447,7 +1733,7 @@ function Section:Accordion(title, stateKey, builderFn, opts)
     hdr.Parent = parent
     mkCorner(hdr, 7)
 
-    -- ── Body (ukuran sementara 0 dulu) ───────────────────────
+    -- ── Body ─────────────────────────────────────────────────
     local body = Instance.new("Frame")
     body.Size = UDim2.new(1, 0, 0, 0)
     body.Position = UDim2.new(0, 0, 0, yOff + 30)
@@ -1457,18 +1743,18 @@ function Section:Accordion(title, stateKey, builderFn, opts)
     body.Visible = open[1]
     body.Parent = parent
 
-    -- ── Jalankan builderFn → ukur tinggi otomatis ────────────
-    local inner = Section.new(body, self._mf, theme, accordionStates)
+    -- ── Build isi → ukur tinggi otomatis ─────────────────────
+    -- Inner section mewarisi _as yang sama supaya nested accordion juga auto-managed
+    local inner = Section.new(body, self._mf, theme, self._as)
     if builderFn then builderFn(inner) end
-    local innerH = inner._y + 8   -- padding bawah 8px
+    local innerH = inner._y + 8
 
-    -- Set ukuran body sebenarnya setelah isi dibangun
     body.Size = UDim2.new(1, 0, 0, innerH)
 
-    -- ── Toggle logic ─────────────────────────────────────────
+    -- ── Toggle ───────────────────────────────────────────────
     hdr.MouseButton1Click:Connect(function()
         open[1] = not open[1]
-        if stateKey then accordionStates[stateKey] = open[1] end
+        accordionStates[stateKey] = open[1]
         body.Visible = open[1]
         hdr.Text = "  " .. title .. (open[1] and "  ▲" or "  ▼")
         local shift = open[1] and innerH or -innerH
@@ -1517,7 +1803,8 @@ function LuluUI.new(cfg)
         for k, v in pairs(cfg.theme) do theme[k] = v end
     end
     self._theme = theme
-    self._accordionStates = cfg.accordionStates or {}
+    -- accordionStates dikelola internal oleh library — user tidak perlu buat sendiri
+    self._accordionStates = {}
 
     -- GUI parent (prioritas: gethui() → CoreGui → PlayerGui)
     local guiParent = (gethui and gethui())
@@ -1852,7 +2139,7 @@ function Window:Tab(name)
     function api:Dropdown(lbl,opts_,def,cb,opts) sec:Dropdown(lbl,opts_,def,cb,opts) end
     function api:MultiDropdown(lbl,opts_,defs,cb,opts) sec:MultiDropdown(lbl,opts_,defs,cb,opts) end
     function api:NumberInput(lbl,def,step,mn,mx,cb,opts) sec:NumberInput(lbl,def,step,mn,mx,cb,opts) end
-    function api:Accordion(title,sk,bFn,opts) sec:Accordion(title,sk,bFn,opts) end
+    function api:Accordion(title,skOrFn,bFnOrOpts,opts) sec:Accordion(title,skOrFn,bFnOrOpts,opts) end
     function api:Custom(fn)                sec:Custom(fn)                      end
 
     -- Widget dengan return value: return langsung (tidak perlu proxy)
@@ -2015,14 +2302,26 @@ end
 
 -- ============================================================
 -- INFO PANEL (overlay kanan atas, optional)
+-- Perf row FPS/CPU/PING otomatis dibikin & di-update.
+-- User cukup panggil :Line(text) untuk baris data di bawahnya.
+-- cfg: width(180), position, bg, visible
 -- ============================================================
 function Window:InfoPanel(cfg)
     cfg = cfg or {}
-    local theme = self._theme
+
+    -- Tinggi panel: 34px perf row + 8px padding atas + 8px bawah
+    -- Akan auto-grow tiap :Line() dipanggil
+    local PERF_H    = 30   -- tinggi perf row
+    local PAD_TOP   = 6    -- padding atas sebelum perf row
+    local LINE_H    = 18   -- tinggi tiap info line
+    local PAD_BOT   = 6
+
+    local initH = PAD_TOP + PERF_H + PAD_BOT
+    local panelW = cfg.width or 180
 
     local panel = Instance.new("Frame")
-    panel.Size = UDim2.new(0, cfg.width or 180, 0, cfg.height or 100)
-    panel.Position = cfg.position or UDim2.new(1, -190, 0, 10)
+    panel.Size = UDim2.new(0, panelW, 0, initH)
+    panel.Position = cfg.position or UDim2.new(1, -(panelW + 10), 0, 10)
     panel.BackgroundColor3 = cfg.bg or Color3.fromRGB(15, 20, 35)
     panel.BackgroundTransparency = 0.2
     panel.BorderSizePixel = 0
@@ -2031,8 +2330,92 @@ function Window:InfoPanel(cfg)
     mkCorner(panel, 10)
     self:_setupDrag(panel, panel)
 
-    local api = {frame = panel, _y = 4}
+    -- ── Perf row background ──────────────────────────────────
+    local perfRow = Instance.new("Frame")
+    perfRow.Size = UDim2.new(1, -8, 0, PERF_H)
+    perfRow.Position = UDim2.new(0, 4, 0, PAD_TOP)
+    perfRow.BackgroundColor3 = Color3.fromRGB(25, 32, 55)
+    perfRow.BorderSizePixel = 0
+    perfRow.Parent = panel
+    mkCorner(perfRow, 6)
 
+    -- ── Helper: satu cell (header kecil + nilai) ─────────────
+    local function mkPerfCell(xScale, label)
+        local cell = Instance.new("Frame")
+        cell.Size = UDim2.new(1/3, 0, 1, 0)
+        cell.Position = UDim2.new(xScale, 0, 0, 0)
+        cell.BackgroundTransparency = 1
+        cell.Parent = perfRow
+
+        local hdr = Instance.new("TextLabel")
+        hdr.Size = UDim2.new(1, 0, 0, 11)
+        hdr.Position = UDim2.new(0, 0, 0, 2)
+        hdr.BackgroundTransparency = 1
+        hdr.Text = label
+        hdr.Font = Enum.Font.Gotham
+        hdr.TextSize = 8
+        hdr.TextColor3 = Color3.fromRGB(120, 140, 180)
+        hdr.TextXAlignment = Enum.TextXAlignment.Center
+        hdr.Parent = cell
+
+        local val = Instance.new("TextLabel")
+        val.Size = UDim2.new(1, 0, 0, 13)
+        val.Position = UDim2.new(0, 0, 0, 13)
+        val.BackgroundTransparency = 1
+        val.Text = "—"
+        val.Font = Enum.Font.GothamBold
+        val.TextSize = 11
+        val.TextColor3 = Color3.fromRGB(255, 255, 255)
+        val.TextXAlignment = Enum.TextXAlignment.Center
+        val.Parent = cell
+        return val
+    end
+
+    -- ── Divider vertikal antara cell ─────────────────────────
+    local function mkPerfDiv(xScale)
+        local d = Instance.new("Frame")
+        d.Size = UDim2.new(0, 1, 0.65, 0)
+        d.Position = UDim2.new(xScale, 0, 0.175, 0)
+        d.BackgroundColor3 = Color3.fromRGB(60, 75, 110)
+        d.BorderSizePixel = 0
+        d.Parent = perfRow
+    end
+
+    local lbl_FPS  = mkPerfCell(0,   "FPS")
+    local lbl_CPU  = mkPerfCell(1/3, "CPU")
+    local lbl_Ping = mkPerfCell(2/3, "PING")
+    mkPerfDiv(1/3)
+    mkPerfDiv(2/3)
+
+    -- ── Auto-update loop (FPS via RenderStepped, Ping via API) ─
+    local _fpsCount = 0
+    local _lastDt   = 0
+    local RunService = game:GetService("RunService")
+    RunService.RenderStepped:Connect(function(dt)
+        _fpsCount = _fpsCount + 1
+        _lastDt   = dt
+    end)
+    task.spawn(function()
+        while panel and panel.Parent do
+            task.wait(0.5)
+            if panel.Visible then
+                lbl_FPS.Text  = tostring(_fpsCount * 2)
+                _fpsCount = 0
+                lbl_CPU.Text  = tostring(math.floor(_lastDt * 1000)) .. "ms"
+                local pingMs = 0
+                pcall(function()
+                    pingMs = math.floor(game:GetService("Players").LocalPlayer:GetNetworkPing() * 1000)
+                end)
+                lbl_Ping.Text = tostring(pingMs)
+            end
+        end
+    end)
+
+    -- ── API ─────────────────────────────────────────────────
+    -- _y mulai setelah perf row + padding
+    local api = {frame = panel, _y = PAD_TOP + PERF_H + 4}
+
+    -- :Line(text) → bikin info line, return TextLabel (update .Text dari luar)
     function api:Line(text)
         local l = Instance.new("TextLabel")
         l.Size = UDim2.new(1, -10, 0, 16)
@@ -2045,12 +2428,14 @@ function Window:InfoPanel(cfg)
         l.TextXAlignment = Enum.TextXAlignment.Left
         l.TextTruncate = Enum.TextTruncate.AtEnd
         l.Parent = panel
-        self._y = self._y + 18
-        return l  -- caller bisa update .Text langsung
+        self._y = self._y + LINE_H
+        -- Auto grow panel
+        panel.Size = UDim2.new(0, panelW, 0, self._y + PAD_BOT)
+        return l
     end
 
-    function api:Show() panel.Visible = true  end
-    function api:Hide() panel.Visible = false end
+    function api:Show()   panel.Visible = true            end
+    function api:Hide()   panel.Visible = false           end
     function api:Toggle() panel.Visible = not panel.Visible end
 
     return api
@@ -2084,10 +2469,12 @@ return LuluUI
 
 local LuluUI = loadstring(game:HttpGet("URL_KE_FILE_INI"))()
 
--- (Opsional) Override tema sebelum buat window
-LuluUI.Theme.sidebar    = Color3.fromRGB(0, 100, 60)
-LuluUI.Theme.sidebarBg  = Color3.fromRGB(0, 80, 50)
-LuluUI.Theme.accentDark = Color3.fromRGB(0, 60, 40)
+-- ── Pilih tema (opsional, default = Purple) ───────────────────
+-- Tema tersedia: Purple, Ocean, Matrix, Crimson, Luxury, Sakura, White, Dark, Tosca
+LuluUI.SetTheme("Ocean")
+
+-- Cek semua nama tema yang tersedia:
+-- print(table.concat(LuluUI.GetThemes(), ", "))
 
 -- Buat window
 local win = LuluUI.new({
@@ -2101,10 +2488,15 @@ local win = LuluUI.new({
 })
 
 -- Info overlay (kanan atas)
-local info = win:InfoPanel({height = 80})
-local lbl_status = info:Line("Status : idle")
-local lbl_count  = info:Line("Count  : 0")
--- Update dari game logic: lbl_status.Text = "Status : fishing"
+-- FPS / CPU / PING otomatis di-handle, tidak perlu diisi manual
+local info = win:InfoPanel()
+local lbl_bill   = info:Line("Bill : —")
+local lbl_sum    = info:Line("Sum  : —")
+local lbl_av     = info:Line("Av   : —")
+local lbl_us     = info:Line("Us   : —")
+-- Update dari game logic:
+-- lbl_bill.Text = "Bill : AM"
+-- lbl_sum.Text  = "Sum  : ambil"
 
 -- ── Tab: Main ────────────────────────────────────────────────
 local tabMain = win:Tab("Main")
@@ -2117,6 +2509,14 @@ tabMain:Toggle("Auto Fish", false, function(v)
     if v then startFishing() else stopFishing() end
 end)
 
+-- Toggle disabled: greyed out, tidak bisa diklik
+tabMain:Toggle("Fast Catch", false, nil, { disabled = true })
+
+-- Toggle dengan subtext
+tabMain:Toggle("Auto Load", true, function(v) autoLoad = v end, {
+    subtext = "Muat otomatis saat join"
+})
+
 tabMain:HalfButtons("▶ Start", "■ Stop",
     function() startFishing() end,
     function() stopFishing()  end
@@ -2128,15 +2528,34 @@ end)
 
 -- Multi-select: pilih beberapa rarity sekaligus
 tabMain:MultiDropdown("Sell Rarity", {"Common","Rare","Epic","Legendary"}, {"Common"}, function(selected)
-    -- selected = {"Common", "Rare"}  ← tabel semua yang dicentang
     sellRarities = selected
 end)
 
-tabMain:Accordion("Advanced", "mainAdv", function(sec)
+-- Accordion: stateKey sekarang OPSIONAL — library auto-manage
+tabMain:Accordion("Advanced", function(sec)
     sec:NumberInput("Delay (s)", 1.2, 0.1, 0.1, 5.0, function(v) CFG.Delay = v end)
     sec:NumberInput("Speed", 0.25, 0.05, 0.05, 2.0, function(v) CFG.Speed = v end)
     sec:Toggle("Auto Sell", true, function(v) autoSell = v end)
 end)
+
+-- Accordion dengan stateKey manual (tetap kompatibel dengan cara lama)
+-- tabMain:Accordion("Advanced", "mainAdv", function(sec) ... end)
+
+-- Button loading: callback menerima done() → panggil kalau proses selesai
+tabMain:Button("Load Vocabulary", function(done)
+    loadKata(function()
+        done()  -- tombol balik normal setelah selesai
+    end)
+end, { loading = "Loading..." })
+
+-- Button biasa tanpa loading
+tabMain:Button("Reset Stats", function()
+    totalCaught = 0
+    win:Toast("Stats direset!", Color3.fromRGB(40, 180, 80))
+end, {
+    color   = Color3.fromRGB(180, 60, 60),
+    confirm = { title = "Reset Stats?", message = "Semua data akan dihapus." }
+})
 
 -- TextInput: return proxy, bisa diupdate dari luar
 local boxWebhook = tabMain:TextInput("Webhook Discord", "", function(text)
