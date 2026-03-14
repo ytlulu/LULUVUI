@@ -1,5 +1,5 @@
 -- ============================================================
---   LuluUI Library v1.2
+--   LuluUI Library v1.0
 --   Pure UI Library | No game logic
 --   Usage: local LuluUI = loadstring(game:HttpGet("URL"))()
 -- ============================================================
@@ -458,9 +458,9 @@ end
 -- Return: bg, 32, proxy
 -- proxy:SetOptions(newOpts, keepValue?)  → update opsi tanpa rebuild widget
 -- proxy:SetValue(text)                  → set label tombol secara manual
-local function _mkDropdown(parent, mainFrame, label, options, default, yOff, callback, theme)
+local function _mkDropdown(parent, mainFrame, label, options, default, yOff, callback, theme, closers)
     local open        = {false}
-    local currentOpts = options   -- upvalue mutable — proxy.SetOptions akan update ini
+    local currentOpts = options
 
     local bg = Instance.new("Frame")
     bg.Size = UDim2.new(1, -16, 0, 32)
@@ -515,6 +515,20 @@ local function _mkDropdown(parent, mainFrame, label, options, default, yOff, cal
     ds.Parent = dropMenu
     mkCorner(ds, 10)
 
+    -- ── closeMenu: tutup dan lepas dari parent ───────────────────
+    local function closeMenu()
+        if open[1] then
+            dropMenu.Visible = false
+            dropMenu.Parent  = nil
+            open[1] = false
+        end
+    end
+
+    -- Register ke shared closers agar _setActive bisa nutup otomatis
+    if closers then
+        table.insert(closers, closeMenu)
+    end
+
     -- ── rebuildMenu: hapus tombol lama, buat ulang dari opts ─────
     local function rebuildMenu(opts)
         for _, c in ipairs(dropMenu:GetChildren()) do
@@ -535,9 +549,7 @@ local function _mkDropdown(parent, mainFrame, label, options, default, yOff, cal
             ob.BackgroundTransparency = 1
             ob.MouseButton1Click:Connect(function()
                 valBtn.Text = opt .. " ▾"
-                dropMenu.Visible = false
-                dropMenu.Parent = nil
-                open[1] = false
+                closeMenu()
                 if callback then callback(opt) end
             end)
         end
@@ -557,26 +569,15 @@ local function _mkDropdown(parent, mainFrame, label, options, default, yOff, cal
             dropMenu.Parent = mainFrame
             dropMenu.Visible = true
         else
-            dropMenu.Visible = false
-            dropMenu.Parent = nil
+            closeMenu()
         end
     end)
 
     -- ── Proxy API ────────────────────────────────────────────────
-    -- proxy:SetOptions(newOpts, keepValue?)
-    --   newOpts   = tabel string opsi baru
-    --   keepValue = true → jangan reset label tombol (default: false → reset ke opsi pertama)
-    -- proxy:SetValue(text)
-    --   paksa set teks label tombol dari luar
     local proxy = {}
 
     function proxy:SetOptions(newOpts, keepValue)
-        -- tutup menu kalau sedang terbuka
-        if open[1] then
-            dropMenu.Visible = false
-            dropMenu.Parent  = nil
-            open[1] = false
-        end
+        closeMenu()
         currentOpts = newOpts
         rebuildMenu(newOpts)
         if not keepValue then
@@ -1567,12 +1568,14 @@ local Section = {}
 Section.__index = Section
 
 -- accordionStates sekarang optional — kalau nil, library auto-manage internal
-function Section.new(container, mainFrame, theme, accordionStates)
+-- closers: tabel shared dari Window._openMenuClosers — dipakai Dropdown untuk register closeMenu
+function Section.new(container, mainFrame, theme, accordionStates, closers)
     return setmetatable({
         _c  = container,
         _mf = mainFrame,
         _t  = theme,
-        _as = accordionStates or {},   -- auto-create kalau tidak dikasih
+        _as = accordionStates or {},
+        _cl = closers or {},   -- shared registry: {fn, fn, ...}
         _y  = 0,
     }, Section)
 end
@@ -1685,7 +1688,7 @@ end
 
 function Section:Dropdown(label, options, default, callback, opts)
     opts = opts or {}
-    local _, _, proxy = _mkDropdown(self._c, self._mf, label, options, default, self._y, callback, self._t)
+    local _, _, proxy = _mkDropdown(self._c, self._mf, label, options, default, self._y, callback, self._t, self._cl)
     self._y = self._y + 32 + (opts.gap or DEFAULT_GAP)
     return proxy
 end
@@ -1795,7 +1798,7 @@ function Section:Accordion(title, stateKeyOrFn, builderFnOrOpts, opts)
 
     -- ── Build isi → ukur tinggi otomatis ─────────────────────
     -- Inner section mewarisi _as yang sama supaya nested accordion juga auto-managed
-    local inner = Section.new(body, self._mf, theme, self._as)
+    local inner = Section.new(body, self._mf, theme, self._as, self._cl)
     if builderFn then builderFn(inner) end
     local innerH = inner._y + 8
 
@@ -1855,6 +1858,8 @@ function LuluUI.new(cfg)
     self._theme = theme
     -- accordionStates dikelola internal oleh library — user tidak perlu buat sendiri
     self._accordionStates = {}
+    -- Registry closeMenu tiap Dropdown — dipanggil semua saat ganti tab
+    self._openMenuClosers = {}
 
     -- GUI parent (prioritas: gethui() → CoreGui → PlayerGui)
     local guiParent = (gethui and gethui())
@@ -2164,7 +2169,7 @@ function LuluUI.new(cfg)
         descText.Size                = UDim2.new(0, 220, 0, 25)
         descText.Position            = UDim2.new(0, -230, 0, 62)  -- offscreen kiri
         descText.BackgroundTransparency = 1
-        descText.Text                = "Beautiful UI v1.2"
+        descText.Text                = "Beautiful UI v1.1"
         descText.Font                = Enum.Font.Gotham
         descText.TextSize            = 14
         descText.TextColor3          = Color3.fromRGB(220, 220, 220)
@@ -2505,7 +2510,7 @@ function Window:Tab(name)
     frame.Parent = self.rightPanel
 
     -- ── Section langsung aktif, widget dibangun sekali ────────
-    local sec = Section.new(frame, self.mainFrame, theme, self._accordionStates)
+    local sec = Section.new(frame, self.mainFrame, theme, self._accordionStates, self._openMenuClosers)
 
     -- ── Tab data ──────────────────────────────────────────────
     local tab = {name = name, btn = btn, frame = frame, sec = sec}
@@ -2630,6 +2635,10 @@ function Window:Tab(name)
 end
 
 function Window:_setActive(tab)
+    -- Tutup semua dropdown yang sedang terbuka
+    for _, closer in ipairs(self._openMenuClosers) do
+        closer()
+    end
     local theme = self._theme
     -- Update button styles
     for _, b in ipairs(self._tabBtns) do
