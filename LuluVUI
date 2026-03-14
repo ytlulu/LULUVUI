@@ -2001,6 +2001,10 @@ function LuluUI.new(cfg)
         local playerName = Players.LocalPlayer and Players.LocalPlayer.Name or "Player"
         local scriptName = cfg.title or "Script"
 
+        -- Sembunyikan seluruh ScreenGui utama selama intro
+        -- (cover mainFrame, lotusBtn, infopanel, spy panel, semua elemen)
+        sg.Enabled = false
+
         -- ── ScreenGui terpisah khusus loading ───────────────
         local loadSg = Instance.new("ScreenGui")
         loadSg.Name        = "LuluUI_Loading"
@@ -2027,7 +2031,7 @@ function LuluUI.new(cfg)
         main.Name                = "Main"
         main.Size                = UDim2.new(0, 350, 0, 200)
         main.Position            = UDim2.new(0.5, -175, 0.5, -100)
-        main.BackgroundColor3    = Color3.fromRGB(52, 52, 52)
+        main.BackgroundColor3    = Color3.fromRGB(28, 18, 50)  -- ungu gelap
         main.BorderSizePixel     = 0
         main.Active              = true
         main.ZIndex              = 901
@@ -2073,7 +2077,7 @@ function LuluUI.new(cfg)
         local holder = Instance.new("Frame")
         holder.Name              = "Holder"
         holder.Size              = UDim2.new(1, 0, 1, 0)
-        holder.BackgroundColor3  = Color3.fromRGB(45, 45, 45)
+        holder.BackgroundColor3  = Color3.fromRGB(22, 14, 40)  -- ungu lebih gelap
         holder.BorderSizePixel   = 0
         holder.ClipsDescendants  = true   -- ← batas clip konten
         holder.ZIndex            = 902
@@ -2188,6 +2192,8 @@ function LuluUI.new(cfg)
                 task.wait(0.1)
                 loadSg:Destroy()
             end)
+            -- Nyalakan kembali seluruh ScreenGui utama
+            sg.Enabled       = true
             mainFrame.Visible = true
             lotusBtn.Visible  = true
             lotusBtn.Rotation = -180
