@@ -1538,14 +1538,12 @@ function LuluUI.new(cfg)
 
     -- ── Lotus Button ─────────────────────────────────────────
     local lotusBtn = Instance.new("ImageButton")
-    lotusBtn.Size = UDim2.new(0, 65, 0, 65)
+    lotusBtn.Size = UDim2.new(0, 50, 0, 50)
     lotusBtn.Position = cfg.lotusPos or UDim2.new(0, 10, 0, 10)
     lotusBtn.Image = cfg.icon or "rbxassetid://89098667773873"
-    lotusBtn.BackgroundColor3 = theme.sidebar
-    lotusBtn.BackgroundTransparency = 0.2
+    lotusBtn.BackgroundTransparency = 1
     lotusBtn.BorderSizePixel = 0
     lotusBtn.Parent = sg
-    mkCorner(lotusBtn, 12)
     self.lotusBtn = lotusBtn
 
     -- ── Main Frame ───────────────────────────────────────────
@@ -1562,17 +1560,6 @@ function LuluUI.new(cfg)
     mainFrame.Parent = sg
     mkCorner(mainFrame, 14)
     self.mainFrame = mainFrame
-
-    -- Shadow
-    local shadow = Instance.new("Frame")
-    shadow.Size = UDim2.new(1, 18, 1, 18)
-    shadow.Position = UDim2.new(0, -9, 0, -9)
-    shadow.BackgroundColor3 = theme.shadow
-    shadow.BackgroundTransparency = 0.88
-    shadow.BorderSizePixel = 0
-    shadow.ZIndex = 0
-    shadow.Parent = mainFrame
-    mkCorner(shadow, 16)
 
     -- ── Title Bar ────────────────────────────────────────────
     local titleBar = Instance.new("Frame")
