@@ -2002,23 +2002,34 @@ function LuluUI.new(cfg)
         local playerName = Players.LocalPlayer and Players.LocalPlayer.Name or "Player"
 
         -- Overlay gelap fullscreen
+        -- FIX: pakai ScreenGui TERPISAH khusus loading
+        -- supaya IgnoreGuiInset tidak mempengaruhi UI utama
+        local loadSg = Instance.new("ScreenGui")
+        loadSg.Name = "LuluUI_Loading"
+        loadSg.ResetOnSpawn = false
+        loadSg.IgnoreGuiInset = true   -- cover full screen dari Y=0
+        loadSg.DisplayOrder = 9999     -- di atas semua GUI lain
+        loadSg.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+        loadSg.Parent = guiParent
+
         local overlay = Instance.new("Frame")
         overlay.Size = UDim2.new(1, 0, 1, 0)
+        overlay.Position = UDim2.new(0, 0, 0, 0)
         overlay.BackgroundColor3 = Color3.fromRGB(10, 8, 15)
         overlay.BackgroundTransparency = 0
         overlay.BorderSizePixel = 0
         overlay.ZIndex = 900
-        overlay.Parent = sg
+        overlay.Parent = loadSg   -- parent ke loadSg, bukan sg utama
 
         -- FIX: pastikan overlay SELALU di-destroy walau animasi error di tengah jalan
         local function safeFinish()
-            if overlay and overlay.Parent then
+            if loadSg and loadSg.Parent then
                 TweenService:Create(overlay,
                     TweenInfo.new(0.3, Enum.EasingStyle.Linear),
                     {BackgroundTransparency = 1}
                 ):Play()
                 task.wait(0.32)
-                pcall(function() overlay:Destroy() end)
+                pcall(function() loadSg:Destroy() end)  -- destroy seluruh ScreenGui loading
             end
             mainFrame.Visible = true
             lotusBtn.Visible  = true
@@ -2034,12 +2045,26 @@ function LuluUI.new(cfg)
         local PH = 0.3333
         local SL = 0.04
 
+        -- ── WARNA FIX LOADING (tidak ikut tema) ─────────────
+        local LC = {
+            bg       = Color3.fromRGB(12,  8,   22),   -- hitam ungu gelap (bg overlay)
+            panelDrk = Color3.fromRGB(28,  15,  55),   -- ungu gelap (panel sisi)
+            panelMid = Color3.fromRGB(55,  25,  100),  -- ungu medium (gradient tengah)
+            accent   = Color3.fromRGB(140, 70,  230),  -- ungu terang (progress bar kiri)
+            accentLt = Color3.fromRGB(220, 180, 255),  -- lavender terang (progress bar kanan)
+            track    = Color3.fromRGB(40,  25,  65),   -- track progress bar
+            white    = Color3.fromRGB(255, 255, 255),  -- putih murni (teks utama)
+            subtext  = Color3.fromRGB(180, 180, 180),  -- abu terang (teks kecil/credit)
+            pct      = Color3.fromRGB(220, 180, 255),  -- lavender (teks persentase)
+            success  = Color3.fromRGB(80,  220, 120),  -- hijau terang (loading success)
+        }
+
         -- ── Panel KIRI ──────────────────────────────────────
         local panelL = Instance.new("Frame")
         panelL.AnchorPoint = Vector2.new(0, 0.5)
         panelL.Size = UDim2.new(PW, 0, PH, 0)
         panelL.Position = UDim2.new(-PW - SL, 0, 0.5, 0)
-        panelL.BackgroundColor3 = theme.sidebar
+        panelL.BackgroundColor3 = LC.panelDrk
         panelL.BorderSizePixel = 0
         panelL.ZIndex = 901
         panelL.Parent = overlay
@@ -2047,8 +2072,8 @@ function LuluUI.new(cfg)
 
         local glL = Instance.new("UIGradient")
         glL.Color = ColorSequence.new({
-            ColorSequenceKeypoint.new(0, theme.sidebar),
-            ColorSequenceKeypoint.new(1, theme.accent),
+            ColorSequenceKeypoint.new(0, LC.panelDrk),
+            ColorSequenceKeypoint.new(1, LC.panelMid),
         })
         glL.Parent = panelL
 
@@ -2056,7 +2081,7 @@ function LuluUI.new(cfg)
         slantL.Size = UDim2.new(SL / PW, 0, 1, 0)
         slantL.AnchorPoint = Vector2.new(0, 0)
         slantL.Position = UDim2.new(1, 0, 0, 0)
-        slantL.BackgroundColor3 = theme.accent
+        slantL.BackgroundColor3 = LC.panelMid
         slantL.BorderSizePixel = 0
         slantL.ZIndex = 901
         slantL.Parent = panelL
@@ -2066,7 +2091,7 @@ function LuluUI.new(cfg)
         panelR.AnchorPoint = Vector2.new(1, 0.5)
         panelR.Size = UDim2.new(PW, 0, PH, 0)
         panelR.Position = UDim2.new(1 + PW + SL, 0, 0.5, 0)
-        panelR.BackgroundColor3 = theme.sidebar
+        panelR.BackgroundColor3 = LC.panelDrk
         panelR.BorderSizePixel = 0
         panelR.ZIndex = 901
         panelR.Parent = overlay
@@ -2074,8 +2099,8 @@ function LuluUI.new(cfg)
 
         local glR = Instance.new("UIGradient")
         glR.Color = ColorSequence.new({
-            ColorSequenceKeypoint.new(0, theme.accent),
-            ColorSequenceKeypoint.new(1, theme.sidebar),
+            ColorSequenceKeypoint.new(0, LC.panelMid),
+            ColorSequenceKeypoint.new(1, LC.panelDrk),
         })
         glR.Parent = panelR
 
@@ -2083,7 +2108,7 @@ function LuluUI.new(cfg)
         slantR.Size = UDim2.new(SL / PW, 0, 1, 0)
         slantR.AnchorPoint = Vector2.new(1, 0)
         slantR.Position = UDim2.new(0, 0, 0, 0)
-        slantR.BackgroundColor3 = theme.accent
+        slantR.BackgroundColor3 = LC.panelMid
         slantR.BorderSizePixel = 0
         slantR.ZIndex = 901
         slantR.Parent = panelR
@@ -2106,7 +2131,7 @@ function LuluUI.new(cfg)
             l.Text = text
             l.Font = bold and Enum.Font.GothamBold or Enum.Font.Gotham
             l.TextSize = size
-            l.TextColor3 = color or theme.textWhite
+            l.TextColor3 = color or LC.white
             l.TextXAlignment = Enum.TextXAlignment.Center
             l.TextScaled = true
             l.ZIndex = 906
@@ -2114,14 +2139,14 @@ function LuluUI.new(cfg)
             return l
         end
 
-        local titleLbl  = mkTxt("Loading Script", 0, 18, 14, true, theme.textWhite)
-        local creditLbl = mkTxt("Beautiful UI by Lulu_Attack", 20, 12, 9, false, theme.textLight)
+        local titleLbl  = mkTxt("Loading Script",          0,  18, 14, true,  LC.white)
+        local creditLbl = mkTxt("Beautiful UI by Lulu_Attack", 20, 12, 9, false, LC.subtext)
 
         -- Progress track
         local progTrack = Instance.new("Frame")
         progTrack.Size = UDim2.new(1, 0, 0, 6)
         progTrack.Position = UDim2.new(0, 0, 0, 42)
-        progTrack.BackgroundColor3 = Color3.fromRGB(40, 30, 55)
+        progTrack.BackgroundColor3 = LC.track
         progTrack.BorderSizePixel = 0
         progTrack.ZIndex = 906
         progTrack.Parent = centerBox
@@ -2129,7 +2154,7 @@ function LuluUI.new(cfg)
 
         local progFill = Instance.new("Frame")
         progFill.Size = UDim2.new(0, 0, 1, 0)
-        progFill.BackgroundColor3 = theme.accent
+        progFill.BackgroundColor3 = LC.accent
         progFill.BorderSizePixel = 0
         progFill.ZIndex = 907
         progFill.Parent = progTrack
@@ -2137,12 +2162,12 @@ function LuluUI.new(cfg)
 
         local glProg = Instance.new("UIGradient")
         glProg.Color = ColorSequence.new({
-            ColorSequenceKeypoint.new(0, theme.accent),
-            ColorSequenceKeypoint.new(1, theme.sidebarBg),
+            ColorSequenceKeypoint.new(0, LC.accent),
+            ColorSequenceKeypoint.new(1, LC.accentLt),
         })
         glProg.Parent = progFill
 
-        local pctLbl = mkTxt("0%", 52, 10, 9, true, theme.accent)
+        local pctLbl = mkTxt("0%", 52, 10, 9, true, LC.pct)
 
         -- ── FASE 1: Panel slide masuk ──────────────────────
         task.wait(0.1)
@@ -2193,7 +2218,7 @@ function LuluUI.new(cfg)
 
         titleLbl.TextTransparency = 1
         titleLbl.Text = "Loading Success"
-        titleLbl.TextColor3 = theme.toggleOn
+        titleLbl.TextColor3 = LC.success
         TweenService:Create(titleLbl, TweenInfo.new(0.3), {TextTransparency = 0}):Play()
         task.wait(0.2)
 
@@ -2205,7 +2230,7 @@ function LuluUI.new(cfg)
         welcomeLbl.Font = Enum.Font.GothamBold
         welcomeLbl.TextSize = 10
         welcomeLbl.TextScaled = true
-        welcomeLbl.TextColor3 = theme.textWhite
+        welcomeLbl.TextColor3 = LC.white
         welcomeLbl.TextTransparency = 1
         welcomeLbl.TextXAlignment = Enum.TextXAlignment.Center
         welcomeLbl.ZIndex = 906
@@ -2221,7 +2246,7 @@ function LuluUI.new(cfg)
         credit2.Font = Enum.Font.Gotham
         credit2.TextSize = 8
         credit2.TextScaled = true
-        credit2.TextColor3 = theme.textLight
+        credit2.TextColor3 = LC.subtext
         credit2.TextTransparency = 1
         credit2.TextXAlignment = Enum.TextXAlignment.Center
         credit2.ZIndex = 906
