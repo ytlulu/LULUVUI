@@ -2011,7 +2011,6 @@ function LuluUI.new(cfg)
 
         -- ── Warna fix, tidak ikut tema ───────────────────────
         local LC = {
-            bg      = Color3.fromRGB(15,  12,  25),   -- background gelap ungu
             box     = Color3.fromRGB(22,  18,  38),   -- kotak dalam
             title   = Color3.fromRGB(255, 255, 255),  -- putih
             desc    = Color3.fromRGB(200, 200, 200),  -- abu terang
@@ -2038,25 +2037,7 @@ function LuluUI.new(cfg)
         -- Rasio 3:1 (lebar:tinggi), 360x120
         local BOX_W, BOX_H = 360, 120
 
-        -- Background fullscreen
-        local bg = Instance.new("Frame")
-        bg.Size = UDim2.new(1, 0, 1, 0)
-        bg.Position = UDim2.new(0, 0, 0, 0)
-        bg.BackgroundColor3 = LC.bg
-        bg.BorderSizePixel = 0
-        bg.ZIndex = 900
-        bg.Parent = loadSg
-
-        -- UIGradient di bg untuk sweep reveal
-        local bgGrad = Instance.new("UIGradient")
-        bgGrad.Rotation = -30
-        bgGrad.Transparency = NumberSequence.new({
-            NumberSequenceKeypoint.new(0, 1),
-            NumberSequenceKeypoint.new(1, 1),
-        })
-        bgGrad.Parent = bg
-
-        -- Kotak tengah
+        -- Kotak tengah — langsung ke loadSg, tidak ada background fullscreen
         local box = Instance.new("Frame")
         box.AnchorPoint = Vector2.new(0.5, 0.5)
         box.Size = UDim2.new(0, BOX_W, 0, BOX_H)
@@ -2065,7 +2046,7 @@ function LuluUI.new(cfg)
         box.BorderSizePixel = 0
         box.ClipsDescendants = true
         box.ZIndex = 901
-        box.Parent = bg
+        box.Parent = loadSg
         mkCorner(box, 10)
 
         -- UIGradient di kotak untuk wipe reveal konten
@@ -2081,15 +2062,6 @@ function LuluUI.new(cfg)
         stroke.Color = Color3.fromRGB(80, 45, 160)
         stroke.Thickness = 1
         stroke.Parent = box
-
-        -- Outline image (seperti Dex++)
-        local outlineGrad = Instance.new("UIGradient")
-        outlineGrad.Rotation = -30
-        outlineGrad.Transparency = NumberSequence.new({
-            NumberSequenceKeypoint.new(0, 1),
-            NumberSequenceKeypoint.new(1, 1),
-        })
-        outlineGrad.Parent = stroke
 
         -- ── Judul: "Loading Script" ──────────────────────────
         -- Mulai offscreen kiri (seperti Dex++ title slide in)
@@ -2162,11 +2134,7 @@ function LuluUI.new(cfg)
         -- ── safeFinish ───────────────────────────────────────
         local function safeFinish()
             pcall(function()
-                TweenService:Create(bg,
-                    TweenInfo.new(0.3, Enum.EasingStyle.Linear),
-                    {BackgroundTransparency = 1}
-                ):Play()
-                task.wait(0.32)
+                task.wait(0.1)
                 loadSg:Destroy()
             end)
             mainFrame.Visible = true
@@ -2182,34 +2150,19 @@ function LuluUI.new(cfg)
 
         local ti = TweenInfo.new(0.4, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
 
-        -- ── FASE 1: BG sweep reveal (kiri→kanan seperti Dex++) ──
-        task.wait(0.1)
-        tweenNumber(100, ti, function(val)
-            val = val / 200
-            local s  = NumberSequenceKeypoint.new(0, 0)
-            local a1 = NumberSequenceKeypoint.new(val, 0)
-            local a2 = NumberSequenceKeypoint.new(math.min(0.5, val + math.min(0.05, val)), 1)
-            if a1.Time == a2.Time then a2 = a1 end
-            local b2 = NumberSequenceKeypoint.new(math.max(0.5, 1 - val - math.min(0.05, val)), 1)
-            local b1 = NumberSequenceKeypoint.new(1 - val, 0)
-            if b1.Time == b2.Time then b2 = b1 end
-            local g  = NumberSequenceKeypoint.new(1, 0)
-            bgGrad.Transparency    = NumberSequence.new({s, a1, a2, b2, b1, g})
-            outlineGrad.Transparency = NumberSequence.new({s, a1, a2, b2, b1, g})
-        end)
-        task.wait(0.45)
-
-        -- ── FASE 2: Box konten wipe reveal (Dex++ holderGradient) ──
+        -- ── FASE 1: Box konten wipe reveal dari kiri → kanan ──
+        -- Background diam, yang animasi HANYA isi kotak
+        task.wait(0.15)
         tweenNumber(100, ti, function(val)
             val = val / 166.66
             local s  = NumberSequenceKeypoint.new(0, 0)
             local a1 = NumberSequenceKeypoint.new(val, 0)
-            local a2 = NumberSequenceKeypoint.new(val + 0.01, 1)
+            local a2 = NumberSequenceKeypoint.new(math.min(1, val + 0.01), 1)
             local g  = NumberSequenceKeypoint.new(1, 1)
             boxGrad.Transparency = NumberSequence.new({s, a1, a2, g})
         end)
 
-        -- Teks slide masuk dari kiri (seperti Dex++ title & desc)
+        -- Teks slide masuk dari kiri bersamaan dengan wipe
         TweenService:Create(titleLbl, ti, {
             Position = UDim2.new(0, 20, 0, 12),
             TextTransparency = 0
@@ -2269,12 +2222,12 @@ function LuluUI.new(cfg)
         TweenService:Create(descLbl, progTI, {TextTransparency = 0}):Play()
         task.wait(1.0)
 
-        -- ── FASE 6: Close — wipe keluar (Dex++ close style) ──
+        -- ── FASE 6: Close — kotak wipe keluar ────────────────
         TweenService:Create(titleLbl, progTI, {TextTransparency = 1}):Play()
         TweenService:Create(descLbl,  progTI, {TextTransparency = 1}):Play()
         task.wait(0.28)
 
-        -- Box wipe keluar: gradient sweep dari tengah ke kanan
+        -- Wipe kotak dari tengah ke kanan (Dex++ close style)
         tweenNumber(100, TweenInfo.new(0.4, Enum.EasingStyle.Back, Enum.EasingDirection.In), function(val)
             val = val / 250
             local s  = NumberSequenceKeypoint.new(0, 0)
@@ -2283,22 +2236,6 @@ function LuluUI.new(cfg)
             if a1.Time == a2.Time then a2 = a1 end
             local g  = NumberSequenceKeypoint.new(1, a1 == a2 and 0 or 1)
             boxGrad.Transparency = NumberSequence.new({s, a1, a2, g})
-        end)
-        task.wait(0.45)
-
-        -- BG sweep keluar
-        bg.BackgroundTransparency = 0
-        bgGrad.Rotation = 30
-        outlineGrad.Rotation = 30
-        tweenNumber(100, ti, function(val)
-            val = val / 100
-            local s  = NumberSequenceKeypoint.new(0, 1)
-            local a1 = NumberSequenceKeypoint.new(val, 1)
-            local a2 = NumberSequenceKeypoint.new(math.min(1, val + math.min(0.05, val)), 0)
-            if a1.Time == a2.Time then a2 = a1 end
-            local g  = NumberSequenceKeypoint.new(1, a1 == a2 and 1 or 0)
-            bgGrad.Transparency    = NumberSequence.new({s, a1, a2, g})
-            outlineGrad.Transparency = NumberSequence.new({s, a1, a2, g})
         end)
         task.wait(0.45)
 
