@@ -43,7 +43,7 @@ LuluUI.Themes = {
         accordionBg  = rgb(235, 238, 248),
         accordionTxt = rgb(100, 110, 140),
         segmentOff   = rgb(160, 165, 180),
-        toast        = rgb(30,  30,  40),
+        luluNotify        = rgb(30,  30,  40),
     },
 
     --  Ocean (Dark Blue) 
@@ -64,7 +64,7 @@ LuluUI.Themes = {
         accordionBg  = rgb(220, 238, 252),
         accordionTxt = rgb(60,  100, 150),
         segmentOff   = rgb(120, 160, 195),
-        toast        = rgb(10,  30,  55),
+        luluNotify        = rgb(10,  30,  55),
     },
 
     --  Matrix (Green) 
@@ -85,7 +85,7 @@ LuluUI.Themes = {
         accordionBg  = rgb(215, 242, 222),
         accordionTxt = rgb(40,  110, 60),
         segmentOff   = rgb(100, 170, 120),
-        toast        = rgb(10,  40,  20),
+        luluNotify        = rgb(10,  40,  20),
     },
 
     --  Crimson (Red) 
@@ -106,7 +106,7 @@ LuluUI.Themes = {
         accordionBg  = rgb(252, 228, 232),
         accordionTxt = rgb(140, 60,  70),
         segmentOff   = rgb(195, 140, 145),
-        toast        = rgb(50,  10,  15),
+        luluNotify        = rgb(50,  10,  15),
     },
 
     --  Luxury (Gold) 
@@ -127,7 +127,7 @@ LuluUI.Themes = {
         accordionBg  = rgb(248, 238, 205),
         accordionTxt = rgb(130, 100, 30),
         segmentOff   = rgb(185, 165, 100),
-        toast        = rgb(45,  30,  5),
+        luluNotify        = rgb(45,  30,  5),
     },
 
     --  Sakura (Pink) 
@@ -148,7 +148,7 @@ LuluUI.Themes = {
         accordionBg  = rgb(252, 228, 244),
         accordionTxt = rgb(155, 70,  115),
         segmentOff   = rgb(205, 155, 185),
-        toast        = rgb(55,  15,  40),
+        luluNotify        = rgb(55,  15,  40),
     },
 
     --  White (Light Mode bersih) 
@@ -169,7 +169,7 @@ LuluUI.Themes = {
         accordionBg  = rgb(240, 242, 250),
         accordionTxt = rgb(100, 108, 135),
         segmentOff   = rgb(155, 162, 180),
-        toast        = rgb(30,  32,  45),
+        luluNotify        = rgb(30,  32,  45),
     },
 
     --  Dark (Dark Mode gelap) 
@@ -190,7 +190,7 @@ LuluUI.Themes = {
         accordionBg  = rgb(38,  42,  60),
         accordionTxt = rgb(130, 140, 170),
         segmentOff   = rgb(75,  83,  110),
-        toast        = rgb(18,  20,  30),
+        luluNotify        = rgb(18,  20,  30),
     },
 
     --  Tosca (Teal/Cyan) 
@@ -211,7 +211,7 @@ LuluUI.Themes = {
         accordionBg  = rgb(210, 245, 242),
         accordionTxt = rgb(30,  115, 110),
         segmentOff   = rgb(100, 175, 170),
-        toast        = rgb(5,   40,  38),
+        luluNotify        = rgb(5,   40,  38),
     },
 }
 
@@ -876,7 +876,7 @@ local function _mkTextInput(parent, label, yOff, default, callback, theme, opts)
     border.Thickness = 1
 
     local box = Instance.new("TextBox")
-    box.Size = UDim2.new(1, -38, 1, 0)
+    box.Size = UDim2.new(1, -16, 1, 0)
     box.Position = UDim2.new(0, 8, 0, 0)
     box.BackgroundTransparency = 1
     box.Text = default or ""
@@ -890,20 +890,6 @@ local function _mkTextInput(parent, label, yOff, default, callback, theme, opts)
     box.MaxVisibleGraphemes = opts.maxLen or math.huge
     box.Parent = inputBg
 
-    -- Tombol submit 
-    local submitBtn = Instance.new("TextButton")
-    submitBtn.Size = UDim2.new(0, 26, 0, 20)
-    submitBtn.Position = UDim2.new(1, -30, 0.5, -10)
-    submitBtn.BackgroundColor3 = theme.accent
-    submitBtn.Text = ""
-    submitBtn.Font = Enum.Font.GothamBold
-    submitBtn.TextSize = 12
-    submitBtn.TextColor3 = theme.textWhite
-    submitBtn.BorderSizePixel = 0
-    submitBtn.Parent = inputBg
-    mkCorner(submitBtn, 5)
-
-    -- Fokus → border biru
     box.Focused:Connect(function()
         TweenService:Create(border, TweenInfo.new(0.15), {Color = theme.accent}):Play()
     end)
@@ -913,10 +899,6 @@ local function _mkTextInput(parent, label, yOff, default, callback, theme, opts)
             callback(box.Text)
             if opts.clearOnSubmit then box.Text = "" end
         end
-    end)
-    submitBtn.MouseButton1Click:Connect(function()
-        if callback then callback(box.Text) end
-        if opts.clearOnSubmit then box.Text = "" end
     end)
 
     -- Expose: caller bisa baca/set box.Text
@@ -1919,9 +1901,9 @@ function LuluUI.new(cfg)
     sg.Parent = guiParent
     self.screenGui = sg
 
-    -- Toast
-    self._toastQueue   = {}
-    self._toastRunning = false
+    -- luluNotify
+    self._luluNotifyQueue   = {}
+    self._luluNotifyRunning = false
 
     --  Lotus Button 
     local lotusBtn = Instance.new("ImageButton")
@@ -2705,29 +2687,29 @@ end
 function Window:_rebuild() end
 
 -- ============================================================
--- TOAST NOTIFICATION
+-- luluNotify NOTIFICATION
 -- ============================================================
-function Window:Toast(msg, color)
+function Window:luluNotify(msg, color)
     local theme = self._theme
-    color = color or theme.toast
-    table.insert(self._toastQueue, {msg = msg, color = color})
-    if self._toastRunning then return end
-    self._toastRunning = true
+    color = color or theme.luluNotify
+    table.insert(self._luluNotifyQueue, {msg = msg, color = color})
+    if self._luluNotifyRunning then return end
+    self._luluNotifyRunning = true
     task.spawn(function()
-        while #self._toastQueue > 0 do
-            local item = table.remove(self._toastQueue, 1)
+        while #self._luluNotifyQueue > 0 do
+            local item = table.remove(self._luluNotifyQueue, 1)
 
-            local toast = Instance.new("Frame")
-            toast.Size = UDim2.new(0, 220, 0, 36)
-            toast.Position = UDim2.new(1, -10, 1, 10)
-            toast.AnchorPoint = Vector2.new(1, 1)
-            toast.BackgroundColor3 = item.color
-            toast.BackgroundTransparency = 0.1
-            toast.BorderSizePixel = 0
-            toast.ZIndex = 999
-            toast.ClipsDescendants = true
-            toast.Parent = self.screenGui
-            mkCorner(toast, 8)
+            local luluNotify = Instance.new("Frame")
+            luluNotify.Size = UDim2.new(0, 220, 0, 36)
+            luluNotify.Position = UDim2.new(1, -10, 1, 10)
+            luluNotify.AnchorPoint = Vector2.new(1, 1)
+            luluNotify.BackgroundColor3 = item.color
+            luluNotify.BackgroundTransparency = 0.1
+            luluNotify.BorderSizePixel = 0
+            luluNotify.ZIndex = 999
+            luluNotify.ClipsDescendants = true
+            luluNotify.Parent = self.screenGui
+            mkCorner(luluNotify, 8)
 
             local lbl = Instance.new("TextLabel")
             lbl.Size = UDim2.new(1, -16, 1, 0)
@@ -2740,22 +2722,22 @@ function Window:Toast(msg, color)
             lbl.TextXAlignment = Enum.TextXAlignment.Left
             lbl.TextTruncate = Enum.TextTruncate.AtEnd
             lbl.ZIndex = 1000
-            lbl.Parent = toast
+            lbl.Parent = luluNotify
 
-            TweenService:Create(toast,
+            TweenService:Create(luluNotify,
                 TweenInfo.new(0.25, Enum.EasingStyle.Back, Enum.EasingDirection.Out),
                 {Position = UDim2.new(1, -10, 1, -10)}
             ):Play()
             task.wait(2.8)
-            TweenService:Create(toast,
+            TweenService:Create(luluNotify,
                 TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.In),
                 {Position = UDim2.new(1, -10, 1, 10)}
             ):Play()
             task.wait(0.22)
-            pcall(function() toast:Destroy() end)
+            pcall(function() luluNotify:Destroy() end)
             task.wait(0.1)
         end
-        self._toastRunning = false
+        self._luluNotifyRunning = false
     end)
 end
 
@@ -3010,7 +2992,7 @@ end, { loading = "Loading..." })
 -- Button biasa tanpa loading
 tabMain:Button("Reset Stats", function()
     totalCaught = 0
-    win:Toast("Stats direset!", Color3.fromRGB(40, 180, 80))
+    win:luluNotify("Stats direset!", Color3.fromRGB(40, 180, 80))
 end, {
     color   = Color3.fromRGB(180, 60, 60),
     confirm = { title = "Reset Stats?", message = "Semua data akan dihapus." }
@@ -3019,7 +3001,7 @@ end, {
 -- TextInput: return proxy, bisa diupdate dari luar
 local boxWebhook = tabMain:TextInput("Webhook Discord", "", function(text)
     SPY_WEBHOOK = text
-    win:Toast("Webhook disimpan!", Color3.fromRGB(40, 180, 80))
+    win:luluNotify("Webhook disimpan!", Color3.fromRGB(40, 180, 80))
 end, {placeholder = "https://discord.com/api/webhooks/..."})
 -- boxWebhook.Text = "nilai baru"  ← tetap valid walau tab di-rebuild
 
@@ -3056,7 +3038,7 @@ tabSett:Separator("Danger Zone")
 -- Button dengan confirm dialog (tidak langsung jalan)
 tabSett:Button("Reset Stats", function()
     totalCaught = 0
-    win:Toast("Stats direset!", Color3.fromRGB(40, 180, 80))
+    win:luluNotify("Stats direset!", Color3.fromRGB(40, 180, 80))
 end, {
     color   = Color3.fromRGB(180, 60, 60),
     confirm = {
@@ -3086,7 +3068,7 @@ tabInfo:CopyButton("GitHub",  "https://github.com/ytlulu")
 
 tabInfo:Button("Join Discord", function()
     pcall(function() setclipboard("https://discord.gg/ytluluv1") end)
-    win:Toast("Link disalin!", Color3.fromRGB(88, 101, 242))
+    win:luluNotify("Link disalin!", Color3.fromRGB(88, 101, 242))
 end, {color = Color3.fromRGB(88, 101, 242)})
 
 
