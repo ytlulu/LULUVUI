@@ -907,9 +907,9 @@ local function _mkTextInput(parent, label, yOff, default, callback, theme, opts)
     box.Focused:Connect(function()
         TweenService:Create(border, TweenInfo.new(0.15), {Color = theme.accent}):Play()
     end)
-    box.FocusLost:Connect(function(enterPressed)
+    box.FocusLost:Connect(function()
         TweenService:Create(border, TweenInfo.new(0.15), {Color = theme.divider}):Play()
-        if enterPressed and callback then
+        if callback then
             callback(box.Text)
             if opts.clearOnSubmit then box.Text = "" end
         end
