@@ -25,7 +25,7 @@ local function rgb(r,g,b) return Color3.fromRGB(r,g,b) end
 
 LuluUI.Themes = {
 
-    -- ── Purple (default) ──────────────────────────────────────
+    --  Purple (default) 
     Purple = {
         accent       = rgb(40,  120, 255),
         accentDark   = rgb(70,  0,   90),
@@ -46,7 +46,7 @@ LuluUI.Themes = {
         toast        = rgb(30,  30,  40),
     },
 
-    -- ── Ocean (Dark Blue) ─────────────────────────────────────
+    --  Ocean (Dark Blue) 
     Ocean = {
         accent       = rgb(0,   180, 255),
         accentDark   = rgb(0,   40,  80),
@@ -67,7 +67,7 @@ LuluUI.Themes = {
         toast        = rgb(10,  30,  55),
     },
 
-    -- ── Matrix (Green) ────────────────────────────────────────
+    --  Matrix (Green) 
     Matrix = {
         accent       = rgb(0,   210, 100),
         accentDark   = rgb(0,   50,  20),
@@ -88,7 +88,7 @@ LuluUI.Themes = {
         toast        = rgb(10,  40,  20),
     },
 
-    -- ── Crimson (Red) ─────────────────────────────────────────
+    --  Crimson (Red) 
     Crimson = {
         accent       = rgb(220, 40,  60),
         accentDark   = rgb(90,  0,   15),
@@ -109,7 +109,7 @@ LuluUI.Themes = {
         toast        = rgb(50,  10,  15),
     },
 
-    -- ── Luxury (Gold) ─────────────────────────────────────────
+    --  Luxury (Gold) 
     Luxury = {
         accent       = rgb(200, 155, 40),
         accentDark   = rgb(70,  45,  0),
@@ -130,7 +130,7 @@ LuluUI.Themes = {
         toast        = rgb(45,  30,  5),
     },
 
-    -- ── Sakura (Pink) ─────────────────────────────────────────
+    --  Sakura (Pink) 
     Sakura = {
         accent       = rgb(230, 80,  150),
         accentDark   = rgb(100, 20,  60),
@@ -151,7 +151,7 @@ LuluUI.Themes = {
         toast        = rgb(55,  15,  40),
     },
 
-    -- ── White (Light Mode bersih) ─────────────────────────────
+    --  White (Light Mode bersih) 
     White = {
         accent       = rgb(60,  130, 255),
         accentDark   = rgb(30,  70,  180),
@@ -172,7 +172,7 @@ LuluUI.Themes = {
         toast        = rgb(30,  32,  45),
     },
 
-    -- ── Dark (Dark Mode gelap) ────────────────────────────────
+    --  Dark (Dark Mode gelap) 
     Dark = {
         accent       = rgb(80,  150, 255),
         accentDark   = rgb(30,  50,  110),
@@ -193,7 +193,7 @@ LuluUI.Themes = {
         toast        = rgb(18,  20,  30),
     },
 
-    -- ── Tosca (Teal/Cyan) ─────────────────────────────────────
+    --  Tosca (Teal/Cyan) 
     Tosca = {
         accent       = rgb(0,   185, 175),
         accentDark   = rgb(0,   65,  65),
@@ -218,7 +218,7 @@ LuluUI.Themes = {
 -- Tema aktif default = Purple
 LuluUI.Theme = LuluUI.Themes.Purple
 
--- ── SetTheme: ganti tema aktif secara global ──────────────────
+--  SetTheme: ganti tema aktif secara global 
 -- Dipanggil SEBELUM LuluUI.new()
 -- Contoh: LuluUI.SetTheme("Ocean")
 function LuluUI.SetTheme(name)
@@ -228,7 +228,7 @@ function LuluUI.SetTheme(name)
     LuluUI.Theme = t
 end
 
--- ── GetThemes: return list nama tema yang tersedia ────────────
+--  GetThemes: return list nama tema yang tersedia 
 function LuluUI.GetThemes()
     local list = {}
     for name in pairs(LuluUI.Themes) do
@@ -489,7 +489,7 @@ local function _mkDropdown(parent, mainFrame, label, options, default, yOff, cal
     valBtn.Size = UDim2.new(0.6, -14, 0, 24)
     valBtn.Position = UDim2.new(0.4, 6, 0.5, -12)
     valBtn.BackgroundColor3 = theme.accent
-    valBtn.Text = default .. " ▾"
+    valBtn.Text = default .. " +"
     valBtn.Font = Enum.Font.GothamBold
     valBtn.TextSize = 11
     valBtn.TextColor3 = theme.textWhite
@@ -498,57 +498,76 @@ local function _mkDropdown(parent, mainFrame, label, options, default, yOff, cal
     valBtn.Parent = bg
     mkCorner(valBtn, 6)
 
+    local ITEM_H   = 28
+    local MAX_SHOW = 6   -- maksimal item visible sebelum scroll
+
+    -- Wrapper frame (background + shadow + clip)
     local dropMenu = Instance.new("Frame")
     dropMenu.BackgroundColor3 = theme.textWhite
-    dropMenu.BorderSizePixel = 0
-    dropMenu.Visible = false
-    dropMenu.ZIndex = 200
+    dropMenu.BorderSizePixel  = 0
+    dropMenu.Visible          = false
+    dropMenu.ZIndex           = 200
+    dropMenu.ClipsDescendants = true
     mkCorner(dropMenu, 8)
 
+    -- Shadow / glow
     local ds = Instance.new("Frame")
-    ds.Size = UDim2.new(1, 8, 1, 8)
-    ds.Position = UDim2.new(0, -4, 0, -4)
-    ds.BackgroundColor3 = theme.accent
+    ds.Size                  = UDim2.new(1, 8, 1, 8)
+    ds.Position              = UDim2.new(0, -4, 0, -4)
+    ds.BackgroundColor3      = theme.accent
     ds.BackgroundTransparency = 0.85
-    ds.BorderSizePixel = 0
-    ds.ZIndex = 199
-    ds.Parent = dropMenu
+    ds.BorderSizePixel        = 0
+    ds.ZIndex                 = 199
+    ds.Parent                 = dropMenu
     mkCorner(ds, 10)
 
-    -- ── closeMenu: tutup dan lepas dari parent ───────────────────
+    -- ScrollingFrame di dalam dropMenu
+    local scroll = Instance.new("ScrollingFrame")
+    scroll.Size                  = UDim2.new(1, 0, 1, 0)
+    scroll.BackgroundTransparency = 1
+    scroll.BorderSizePixel        = 0
+    scroll.ScrollBarThickness     = 4
+    scroll.ScrollBarImageColor3   = theme.accent
+    scroll.CanvasSize             = UDim2.new(0, 0, 0, 0)   -- di-set ulang tiap rebuild
+    scroll.ZIndex                 = 201
+    scroll.Parent                 = dropMenu
+
+    --  closeMenu 
     local function closeMenu()
         if open[1] then
             dropMenu.Visible = false
             dropMenu.Parent  = nil
-            open[1] = false
+            open[1]          = false
+            -- restore open indicator
+            local cur = valBtn.Text:gsub("%s*%+$", ""):gsub("%s*%-$", "")
+            valBtn.Text = cur .. " +"
         end
     end
 
-    -- Register ke shared closers agar _setActive bisa nutup otomatis
-    if closers then
-        table.insert(closers, closeMenu)
-    end
+    if closers then table.insert(closers, closeMenu) end
 
-    -- ── rebuildMenu: hapus tombol lama, buat ulang dari opts ─────
+    --  rebuildMenu 
     local function rebuildMenu(opts)
-        for _, c in ipairs(dropMenu:GetChildren()) do
-            if c:IsA("TextButton") then c:Destroy() end
-        end
+        -- bersihkan item lama
+        for _, c in ipairs(scroll:GetChildren()) do c:Destroy() end
+
+        scroll.CanvasSize = UDim2.new(0, 0, 0, #opts * ITEM_H)
+
         for i, opt in ipairs(opts) do
             local ob = Instance.new("TextButton")
-            ob.Size = UDim2.new(1, 0, 0, 28)
-            ob.Position = UDim2.new(0, 0, 0, (i - 1) * 28)
+            ob.Size                = UDim2.new(1, 0, 0, ITEM_H)
+            ob.Position            = UDim2.new(0, 0, 0, (i - 1) * ITEM_H)
             ob.BackgroundTransparency = 1
-            ob.Text = opt
-            ob.Font = Enum.Font.Gotham
-            ob.TextSize = 12
-            ob.TextColor3 = theme.text
-            ob.ZIndex = 201
-            ob.Parent = dropMenu
+            ob.Text                = opt
+            ob.Font                = Enum.Font.Gotham
+            ob.TextSize            = 12
+            ob.TextColor3          = theme.text
+            ob.ZIndex              = 202
+            ob.Parent              = scroll
             makeHover(ob, theme.textWhite, Color3.fromRGB(235, 240, 255))
             ob.BackgroundTransparency = 1
             ob.MouseButton1Click:Connect(function()
-                valBtn.Text = opt .. " ▾"
+                valBtn.Text = opt .. " +"
                 closeMenu()
                 if callback then callback(opt) end
             end)
@@ -560,20 +579,28 @@ local function _mkDropdown(parent, mainFrame, label, options, default, yOff, cal
     valBtn.MouseButton1Click:Connect(function()
         open[1] = not open[1]
         if open[1] then
-            local absPos   = valBtn.AbsolutePosition
-            local framePos = mainFrame.AbsolutePosition
-            local menuW    = valBtn.AbsoluteSize.X
-            dropMenu.Size  = UDim2.new(0, menuW, 0, #currentOpts * 28)
-            dropMenu.Position = UDim2.new(0, absPos.X - framePos.X, 0,
-                absPos.Y - framePos.Y + valBtn.AbsoluteSize.Y + 4)
-            dropMenu.Parent = mainFrame
-            dropMenu.Visible = true
+            local visibleItems = math.min(#currentOpts, MAX_SHOW)
+            local menuH        = visibleItems * ITEM_H
+            local absPos       = valBtn.AbsolutePosition
+            local framePos     = mainFrame.AbsolutePosition
+            local menuW        = valBtn.AbsoluteSize.X
+            dropMenu.Size      = UDim2.new(0, menuW, 0, menuH)
+            dropMenu.Position  = UDim2.new(
+                0, absPos.X - framePos.X,
+                0, absPos.Y - framePos.Y + valBtn.AbsoluteSize.Y + 4
+            )
+            scroll.CanvasSize  = UDim2.new(0, 0, 0, #currentOpts * ITEM_H)
+            dropMenu.Parent    = mainFrame
+            dropMenu.Visible   = true
+            -- show close indicator
+            local cur = valBtn.Text:gsub("%s*%+$", ""):gsub("%s*%-$", "")
+            valBtn.Text = cur .. " -"
         else
             closeMenu()
         end
     end)
 
-    -- ── Proxy API ────────────────────────────────────────────────
+    --  Proxy API 
     local proxy = {}
 
     function proxy:SetOptions(newOpts, keepValue)
@@ -581,12 +608,12 @@ local function _mkDropdown(parent, mainFrame, label, options, default, yOff, cal
         currentOpts = newOpts
         rebuildMenu(newOpts)
         if not keepValue then
-            valBtn.Text = (newOpts[1] or "—") .. " ▾"
+            valBtn.Text = (newOpts[1] or "---") .. " +"
         end
     end
 
     function proxy:SetValue(text)
-        valBtn.Text = text .. " ▾"
+        valBtn.Text = text .. " +"
     end
 
     return bg, 32, proxy
@@ -610,11 +637,11 @@ local function _mkMultiDropdown(parent, mainFrame, label, options, defaults, yOf
 
     local function getLabel()
         local n = countSelected()
-        if n == 0 then return "— none — ▾" end
+        if n == 0 then return "— none — " end
         if n == 1 then
-            for k in pairs(selected) do return k .. " ▾" end
+            for k in pairs(selected) do return k .. " " end
         end
-        return n .. " selected ▾"
+        return n .. " selected "
     end
 
     local bg = Instance.new("Frame")
@@ -693,7 +720,7 @@ local function _mkMultiDropdown(parent, mainFrame, label, options, defaults, yOf
     local function refreshRow(opt, row, check)
         local on = selected[opt] == true
         row.BackgroundColor3 = on and Color3.fromRGB(235, 245, 255) or theme.textWhite
-        check.Text = on and "✓" or ""
+        check.Text = on and "" or ""
         check.TextColor3 = theme.accent
     end
 
@@ -714,7 +741,7 @@ local function _mkMultiDropdown(parent, mainFrame, label, options, defaults, yOf
         check.Position = UDim2.new(0, 6, 0.5, -10)
         check.BackgroundColor3 = theme.contentBg
         check.BorderSizePixel = 0
-        check.Text = selected[opt] and "✓" or ""
+        check.Text = selected[opt] and "" or ""
         check.Font = Enum.Font.GothamBold
         check.TextSize = 12
         check.TextColor3 = theme.accent
@@ -790,7 +817,7 @@ end
 -- TEXT INPUT
 -- label di atas, kotak ketik di bawah
 -- opts.placeholder, opts.maxLen, opts.clearOnSubmit
--- callback(text) dipanggil saat Enter / tombol ✓
+-- callback(text) dipanggil saat Enter / tombol 
 -- ============================================================
 local function _mkTextInput(parent, label, yOff, default, callback, theme, opts)
     opts = opts or {}
@@ -845,12 +872,12 @@ local function _mkTextInput(parent, label, yOff, default, callback, theme, opts)
     box.MaxVisibleGraphemes = opts.maxLen or math.huge
     box.Parent = inputBg
 
-    -- Tombol submit ✓
+    -- Tombol submit 
     local submitBtn = Instance.new("TextButton")
     submitBtn.Size = UDim2.new(0, 26, 0, 20)
     submitBtn.Position = UDim2.new(1, -30, 0.5, -10)
     submitBtn.BackgroundColor3 = theme.accent
-    submitBtn.Text = "✓"
+    submitBtn.Text = ""
     submitBtn.Font = Enum.Font.GothamBold
     submitBtn.TextSize = 12
     submitBtn.TextColor3 = theme.textWhite
@@ -1289,7 +1316,7 @@ local function _mkSegment(parent, label, options, default, yOff, callback, theme
 end
 
 -- ============================================================
--- SEPARATOR BERLABEL  ──── Judul Section ────
+-- SEPARATOR BERLABEL   Judul Section 
 -- Garis horizontal dengan teks di tengah
 -- ============================================================
 local function _mkSeparator(parent, text, yOff, theme)
@@ -1376,7 +1403,7 @@ end
 -- ============================================================
 -- COPY BUTTON
 -- Baris label + tombol kecil "Copy" di kanan
--- Klik → setclipboard(value), lalu tombol sementara jadi "✓ Copied"
+-- Klik → setclipboard(value), lalu tombol sementara jadi " Copied"
 -- ============================================================
 local function _mkCopyButton(parent, label, value, yOff, theme)
     local h = 30
@@ -1419,7 +1446,7 @@ local function _mkCopyButton(parent, label, value, yOff, theme)
         if copying then return end
         copying = true
         pcall(function() setclipboard(value) end)
-        copyBtn.Text = "✓ Copied"
+        copyBtn.Text = " Copied"
         copyBtn.BackgroundColor3 = theme.toggleOn
         task.wait(1.5)
         copyBtn.Text = "Copy"
@@ -1595,7 +1622,7 @@ function Section:Divider(opts)
     self._y = self._y + 1 + (opts.gap or 8)
 end
 
--- Separator berlabel ──── Judul ────
+-- Separator berlabel  Judul 
 function Section:Separator(text, opts)
     opts = opts or {}
     _mkSeparator(self._c, text, self._y, self._t)
@@ -1709,7 +1736,7 @@ function Section:NumberInput(label, default, step, minVal, maxVal, callback, opt
 end
 
 -- TextInput
--- callback(text) dipanggil saat Enter atau tombol ✓
+-- callback(text) dipanggil saat Enter atau tombol 
 -- opts.placeholder, opts.clearOnSubmit, opts.maxLen
 -- return: TextBox instance (bisa baca/set .Text)
 function Section:TextInput(label, default, callback, opts)
@@ -1771,13 +1798,13 @@ function Section:Accordion(title, stateKeyOrFn, builderFnOrOpts, opts)
     local yOff            = self._y
     local parent          = self._c
 
-    -- ── Header ───────────────────────────────────────────────
+    --  Header 
     local hdr = Instance.new("TextButton")
     hdr.Size = UDim2.new(1, -16, 0, 26)
     hdr.Position = UDim2.new(0, 8, 0, yOff)
     hdr.BackgroundColor3 = theme.accordionBg
     hdr.BorderSizePixel = 0
-    hdr.Text = "  " .. title .. (open[1] and "  ▲" or "  ▼")
+    hdr.Text = "  " .. title .. (open[1] and "  [-]" or "  [+]")
     hdr.Font = Enum.Font.GothamBold
     hdr.TextSize = 10
     hdr.TextColor3 = theme.accordionTxt
@@ -1786,7 +1813,7 @@ function Section:Accordion(title, stateKeyOrFn, builderFnOrOpts, opts)
     hdr.Parent = parent
     mkCorner(hdr, 7)
 
-    -- ── Body ─────────────────────────────────────────────────
+    --  Body 
     local body = Instance.new("Frame")
     body.Size = UDim2.new(1, 0, 0, 0)
     body.Position = UDim2.new(0, 0, 0, yOff + 30)
@@ -1796,7 +1823,7 @@ function Section:Accordion(title, stateKeyOrFn, builderFnOrOpts, opts)
     body.Visible = open[1]
     body.Parent = parent
 
-    -- ── Build isi → ukur tinggi otomatis ─────────────────────
+    --  Build isi → ukur tinggi otomatis 
     -- Inner section mewarisi _as yang sama supaya nested accordion juga auto-managed
     local inner = Section.new(body, self._mf, theme, self._as, self._cl)
     if builderFn then builderFn(inner) end
@@ -1804,12 +1831,12 @@ function Section:Accordion(title, stateKeyOrFn, builderFnOrOpts, opts)
 
     body.Size = UDim2.new(1, 0, 0, innerH)
 
-    -- ── Toggle ───────────────────────────────────────────────
+    --  Toggle 
     hdr.MouseButton1Click:Connect(function()
         open[1] = not open[1]
         accordionStates[stateKey] = open[1]
         body.Visible = open[1]
-        hdr.Text = "  " .. title .. (open[1] and "  ▲" or "  ▼")
+        hdr.Text = "  " .. title .. (open[1] and "  [-]" or "  [+]")
         local shift = open[1] and innerH or -innerH
         local threshold = hdr.Position.Y.Offset + 26
         for _, child in ipairs(parent:GetChildren()) do
@@ -1866,7 +1893,7 @@ function LuluUI.new(cfg)
         or game:GetService("CoreGui")
         or Players.LocalPlayer:WaitForChild("PlayerGui")
 
-    -- ── ScreenGui ────────────────────────────────────────────
+    --  ScreenGui 
     local sg = Instance.new("ScreenGui")
     sg.Name = cfg.name or "LuluUI"
     sg.ResetOnSpawn = false
@@ -1878,7 +1905,7 @@ function LuluUI.new(cfg)
     self._toastQueue   = {}
     self._toastRunning = false
 
-    -- ── Lotus Button ─────────────────────────────────────────
+    --  Lotus Button 
     local lotusBtn = Instance.new("ImageButton")
     lotusBtn.Size = UDim2.new(0, 50, 0, 50)
     lotusBtn.Position = cfg.lotusPos or UDim2.new(0, 10, 0, 10)
@@ -1889,7 +1916,7 @@ function LuluUI.new(cfg)
     lotusBtn.Parent = sg
     self.lotusBtn = lotusBtn
 
-    -- ── Main Frame ───────────────────────────────────────────
+    --  Main Frame 
     local W = cfg.width  or 310
     local H = cfg.height or 270
     local mainFrame = Instance.new("Frame")
@@ -1904,7 +1931,7 @@ function LuluUI.new(cfg)
     mkCorner(mainFrame, 14)
     self.mainFrame = mainFrame
 
-    -- ── Title Bar ────────────────────────────────────────────
+    --  Title Bar 
     local titleBar = Instance.new("Frame")
     titleBar.Size = UDim2.new(1, 0, 0, 36)
     titleBar.BackgroundColor3 = theme.sidebar
@@ -1964,7 +1991,7 @@ function LuluUI.new(cfg)
     mkCorner(closeBtn, 7)
     makeHover(closeBtn, theme.accentDark, theme.sidebar)
 
-    -- ── Sidebar ──────────────────────────────────────────────
+    --  Sidebar 
     local leftPanel = Instance.new("Frame")
     leftPanel.Size = UDim2.new(0, 90, 1, -36)
     leftPanel.Position = UDim2.new(0, 0, 0, 36)
@@ -1974,7 +2001,7 @@ function LuluUI.new(cfg)
     leftPanel.Parent = mainFrame
     self.leftPanel = leftPanel
 
-    -- ── Content Panel ─────────────────────────────────────────
+    --  Content Panel 
     local rightPanel = Instance.new("Frame")
     rightPanel.Size = UDim2.new(1, -90, 1, -36)
     rightPanel.Position = UDim2.new(0, 90, 0, 36)
@@ -1997,7 +2024,7 @@ function LuluUI.new(cfg)
     container.Parent = rightPanel
     self.container = container
 
-    -- ── Resize Handle ─────────────────────────────────────────
+    --  Resize Handle 
     local resizeHandle = Instance.new("Frame")
     resizeHandle.Size = UDim2.new(0, 14, 0, 14)
     resizeHandle.AnchorPoint = Vector2.new(1, 1)
@@ -2050,7 +2077,7 @@ function LuluUI.new(cfg)
         ):Play()
     end)
 
-    -- ── Loading Screen ───────────────────────────────────────
+    --  Loading Screen 
     -- Gaya Dex++: gradient sweep reveal, holder wipe, teks slide, close wipe
     task.spawn(function()
         local playerName = Players.LocalPlayer and Players.LocalPlayer.Name or "Player"
@@ -2060,7 +2087,7 @@ function LuluUI.new(cfg)
         -- (cover mainFrame, lotusBtn, infopanel, spy panel, semua elemen)
         sg.Enabled = false
 
-        -- ── ScreenGui terpisah khusus loading ───────────────
+        --  ScreenGui terpisah khusus loading 
         local loadSg = Instance.new("ScreenGui")
         loadSg.Name        = "LuluUI_Loading"
         loadSg.ResetOnSpawn = false
@@ -2069,7 +2096,7 @@ function LuluUI.new(cfg)
         loadSg.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
         loadSg.Parent = guiParent
 
-        -- ── Helper tweenNumber persis Dex++ ─────────────────
+        --  Helper tweenNumber persis Dex++ 
         local tweenS = TweenService
         local function tweenNumber(n, ti, func)
             local tweenVal = Instance.new("IntValue")
@@ -2081,7 +2108,7 @@ function LuluUI.new(cfg)
             return tween
         end
 
-        -- ── Main Frame (350x200, di tengah layar) ────────────
+        --  Main Frame (350x200, di tengah layar) 
         local main = Instance.new("Frame")
         main.Name                = "Main"
         main.Size                = UDim2.new(0, 350, 0, 200)
@@ -2101,7 +2128,7 @@ function LuluUI.new(cfg)
         })
         backGradient.Parent = main
 
-        -- ── Outline ImageLabel (border efek) ─────────────────
+        --  Outline ImageLabel (border efek) 
         local outlines = Instance.new("Frame")
         outlines.Name             = "Outlines"
         outlines.Size             = UDim2.new(1, 10, 1, 10)
@@ -2128,7 +2155,7 @@ function LuluUI.new(cfg)
         stroke.Transparency = 1
         stroke.Parent       = outlines
 
-        -- ── Holder (ClipsDescendants = true) ─────────────────
+        --  Holder (ClipsDescendants = true) 
         local holder = Instance.new("Frame")
         holder.Name              = "Holder"
         holder.Size              = UDim2.new(1, 0, 1, 0)
@@ -2148,7 +2175,7 @@ function LuluUI.new(cfg)
         })
         holderGradient.Parent = holder
 
-        -- ── Title: "Loading Script" ───────────────────────────
+        --  Title: "Loading Script" 
         local titleText = Instance.new("TextLabel")
         titleText.Name               = "Title"
         titleText.Size               = UDim2.new(0, 160, 0, 50)
@@ -2163,7 +2190,7 @@ function LuluUI.new(cfg)
         titleText.ZIndex             = 903
         titleText.Parent             = holder
 
-        -- ── Desc: "Beautiful UI by Lulu_Attack" ──────────────
+        --  Desc: "Beautiful UI by Lulu_Attack" 
         local descText = Instance.new("TextLabel")
         descText.Name                = "Desc"
         descText.Size                = UDim2.new(0, 220, 0, 25)
@@ -2178,7 +2205,7 @@ function LuluUI.new(cfg)
         descText.ZIndex              = 903
         descText.Parent              = holder
 
-        -- ── Status Text ──────────────────────────────────────
+        --  Status Text 
         local statusText = Instance.new("TextLabel")
         statusText.Name              = "StatusText"
         statusText.Size              = UDim2.new(0, 200, 0, 25)
@@ -2193,7 +2220,7 @@ function LuluUI.new(cfg)
         statusText.ZIndex            = 903
         statusText.Parent            = holder
 
-        -- ── Progress Bar ─────────────────────────────────────
+        --  Progress Bar 
         local progressBar = Instance.new("Frame")
         progressBar.Name             = "ProgressBar"
         progressBar.Size             = UDim2.new(0, 0, 0, 4)
@@ -2220,7 +2247,7 @@ function LuluUI.new(cfg)
         })
         barGrad.Parent = bar
 
-        -- ── Creator (kanan bawah) — satu-satunya teks kanan ──
+        --  Creator (kanan bawah) — satu-satunya teks kanan 
         local creatorText = Instance.new("TextLabel")
         creatorText.Name             = "Creator"
         creatorText.Size             = UDim2.new(0, 105, 0, 20)
@@ -2241,7 +2268,7 @@ function LuluUI.new(cfg)
         })
         creatorGradient.Parent = creatorText
 
-        -- ── safeFinish ───────────────────────────────────────
+        --  safeFinish 
         local function safeFinish()
             pcall(function()
                 task.wait(0.1)
@@ -2263,7 +2290,7 @@ function LuluUI.new(cfg)
         local ti         = TweenInfo.new(0.4, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
         local progressTI = TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
 
-        -- ── FASE 1: backGradient + outlinesGradient sweep reveal ──
+        --  FASE 1: backGradient + outlinesGradient sweep reveal 
         -- Persis Dex++: sweep dari tengah keluar (val/200)
         tweenNumber(100, ti, function(val)
             val = val / 200
@@ -2281,7 +2308,7 @@ function LuluUI.new(cfg)
         end)
         task.wait(0.4)
 
-        -- ── FASE 2: holderGradient wipe kiri→kanan ───────────
+        --  FASE 2: holderGradient wipe kiri→kanan 
         -- + title slide in + desc slide in + rightText fade in
         tweenNumber(100, ti, function(val)
             val = val / 166.66
@@ -2320,7 +2347,7 @@ function LuluUI.new(cfg)
 
         task.wait(0.9)
 
-        -- ── FASE 3: Status + ProgressBar muncul ─────────────
+        --  FASE 3: Status + ProgressBar muncul 
         tweenS:Create(statusText, progressTI, {
             Position = UDim2.new(0, 20, 0, 120),
             TextTransparency = 0,
@@ -2331,7 +2358,7 @@ function LuluUI.new(cfg)
         }):Play()
         task.wait(0.3)
 
-        -- ── FASE 4: Progress bar jalan ────────────────────────
+        --  FASE 4: Progress bar jalan 
         -- Status cukup "Loading..." sampai selesai → "Done"
         statusText.Text = "Loading..."
         local tw100 = tweenS:Create(bar, TweenInfo.new(1.8, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
@@ -2342,7 +2369,7 @@ function LuluUI.new(cfg)
         statusText.Text = "Done"
         task.wait(0.4)
 
-        -- ── FASE 5: Ganti semua teks → Welcome / Name / Script ──
+        --  FASE 5: Ganti semua teks → Welcome / Name / Script 
         tweenS:Create(titleText,  progressTI, {TextTransparency = 1}):Play()
         tweenS:Create(descText,   progressTI, {TextTransparency = 1}):Play()
         tweenS:Create(statusText, progressTI, {TextTransparency = 1}):Play()
@@ -2366,7 +2393,7 @@ function LuluUI.new(cfg)
         tweenS:Create(statusText, progressTI, {TextTransparency = 0}):Play()
         task.wait(1.0)
 
-        -- ── FASE 6: close() persis Dex++ ─────────────────────
+        --  FASE 6: close() persis Dex++ 
         tweenS:Create(titleText,   progressTI, {TextTransparency = 1}):Play()
         tweenS:Create(descText,    progressTI, {TextTransparency = 1}):Play()
         tweenS:Create(creatorText, progressTI, {TextTransparency = 1}):Play()
@@ -2480,7 +2507,7 @@ function Window:Tab(name)
     local theme  = self._theme
     local yOff   = self._tabY
 
-    -- ── Sidebar button ────────────────────────────────────────
+    --  Sidebar button 
     local btn = Instance.new("TextButton")
     btn.Size = UDim2.new(1, -10, 0, 30)
     btn.Position = UDim2.new(0, 5, 0, yOff)
@@ -2497,7 +2524,7 @@ function Window:Tab(name)
 
     self._tabY = yOff + 36
 
-    -- ── Frame persisten khusus tab ini ────────────────────────
+    --  Frame persisten khusus tab ini 
     local frame = Instance.new("ScrollingFrame")
     frame.Size = UDim2.new(1, -12, 1, -12)
     frame.Position = UDim2.new(0, 6, 0, 6)
@@ -2509,10 +2536,10 @@ function Window:Tab(name)
     frame.Visible = false   -- hidden sampai diaktifkan
     frame.Parent = self.rightPanel
 
-    -- ── Section langsung aktif, widget dibangun sekali ────────
+    --  Section langsung aktif, widget dibangun sekali 
     local sec = Section.new(frame, self.mainFrame, theme, self._accordionStates, self._openMenuClosers)
 
-    -- ── Tab data ──────────────────────────────────────────────
+    --  Tab data 
     local tab = {name = name, btn = btn, frame = frame, sec = sec}
     table.insert(self._tabs, tab)
     table.insert(self._tabBtns, btn)
@@ -2526,7 +2553,7 @@ function Window:Tab(name)
         self:_setActive(tab)
     end
 
-    -- ── Tab API langsung delegasi ke Section ─────────────────
+    --  Tab API langsung delegasi ke Section 
     -- Widget dibangun langsung, tidak di-defer → state persistent
     local api = {}
 
@@ -2744,7 +2771,7 @@ function Window:InfoPanel(cfg)
     mkCorner(panel, 10)
     self:_setupDrag(panel, panel)
 
-    -- ── Perf row background ──────────────────────────────────
+    --  Perf row background 
     local perfRow = Instance.new("Frame")
     perfRow.Size = UDim2.new(1, -8, 0, PERF_H)
     perfRow.Position = UDim2.new(0, 4, 0, PAD_TOP)
@@ -2753,7 +2780,7 @@ function Window:InfoPanel(cfg)
     perfRow.Parent = panel
     mkCorner(perfRow, 6)
 
-    -- ── Helper: satu cell (header kecil + nilai) ─────────────
+    --  Helper: satu cell (header kecil + nilai) 
     local function mkPerfCell(xScale, label)
         local cell = Instance.new("Frame")
         cell.Size = UDim2.new(1/3, 0, 1, 0)
@@ -2785,7 +2812,7 @@ function Window:InfoPanel(cfg)
         return val
     end
 
-    -- ── Divider vertikal antara cell ─────────────────────────
+    --  Divider vertikal antara cell 
     local function mkPerfDiv(xScale)
         local d = Instance.new("Frame")
         d.Size = UDim2.new(0, 1, 0.65, 0)
@@ -2801,7 +2828,7 @@ function Window:InfoPanel(cfg)
     mkPerfDiv(1/3)
     mkPerfDiv(2/3)
 
-    -- ── Auto-update loop (FPS via RenderStepped, Ping via API) ─
+    --  Auto-update loop (FPS via RenderStepped, Ping via API) 
     local _fpsCount = 0
     local _lastDt   = 0
     local RunService = game:GetService("RunService")
@@ -2825,7 +2852,7 @@ function Window:InfoPanel(cfg)
         end
     end)
 
-    -- ── API ─────────────────────────────────────────────────
+    --  API 
     -- _y mulai setelah perf row + padding
     local api = {frame = panel, _y = PAD_TOP + PERF_H + 4}
 
@@ -2877,13 +2904,13 @@ return LuluUI
 -- ============================================================
 
 --[[
-═══════════════════════════════════════════════════════════════
+
   CONTOH PENGGUNAAN
-═══════════════════════════════════════════════════════════════
+
 
 local LuluUI = loadstring(game:HttpGet("URL_KE_FILE_INI"))()
 
--- ── Pilih tema (opsional, default = Purple) ───────────────────
+--  Pilih tema (opsional, default = Purple) 
 -- Tema tersedia: Purple, Ocean, Matrix, Crimson, Luxury, Sakura, White, Dark, Tosca
 LuluUI.SetTheme("Ocean")
 
@@ -2912,7 +2939,7 @@ local lbl_us     = info:Line("Us   : —")
 -- lbl_bill.Text = "Bill : AM"
 -- lbl_sum.Text  = "Sum  : ambil"
 
--- ── Tab: Main ────────────────────────────────────────────────
+--  Tab: Main 
 local tabMain = win:Tab("Main")
 
 tabMain:Segment("Mode", {"Normal", "Mid", "Risk"}, "Normal", function(v)
@@ -2931,7 +2958,7 @@ tabMain:Toggle("Auto Load", true, function(v) autoLoad = v end, {
     subtext = "Muat otomatis saat join"
 })
 
-tabMain:HalfButtons("▶ Start", "■ Stop",
+tabMain:HalfButtons(" Start", " Stop",
     function() startFishing() end,
     function() stopFishing()  end
 )
@@ -2978,7 +3005,7 @@ local boxWebhook = tabMain:TextInput("Webhook Discord", "", function(text)
 end, {placeholder = "https://discord.com/api/webhooks/..."})
 -- boxWebhook.Text = "nilai baru"  ← tetap valid walau tab di-rebuild
 
--- ── Tab: Log ─────────────────────────────────────────────────
+--  Tab: Log 
 local tabLog = win:Tab("Log")
 
 -- ProgressBar: return proxy, update dari game logic kapan saja
@@ -2998,7 +3025,7 @@ local listWords = tabLog:List("Kata terpakai", {
 local listSpy = tabLog:List("Spy words", {height = 100})
 -- listSpy:Add("komputer")
 
--- ── Tab: Settings ────────────────────────────────────────────
+--  Tab: Settings 
 local tabSett = win:Tab("Settings")
 
 tabSett:Toggle("Disable 3D", false, function(v)
@@ -3023,7 +3050,7 @@ end, {
 -- Confirm dari luar widget (shortcut window)
 -- win:Confirm("Judul", "Pesan?", function() ... end)
 
--- ── Tab: Info ────────────────────────────────────────────────
+--  Tab: Info 
 local tabInfo = win:Tab("Info")
 
 -- Badge versi
@@ -3044,5 +3071,5 @@ tabInfo:Button("Join Discord", function()
     win:Toast("Link disalin!", Color3.fromRGB(88, 101, 242))
 end, {color = Color3.fromRGB(88, 101, 242)})
 
-═══════════════════════════════════════════════════════════════
+
 ]]
