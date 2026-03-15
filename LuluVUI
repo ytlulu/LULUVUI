@@ -567,8 +567,8 @@ local function _mkDropdown(parent, mainFrame, label, options, default, yOff, cal
             makeHover(ob, theme.textWhite, Color3.fromRGB(235, 240, 255))
             ob.BackgroundTransparency = 1
             ob.MouseButton1Click:Connect(function()
-                valBtn.Text = opt .. " +"
-                closeMenu()
+                closeMenu()                  -- nutup dulu (restore "+ "), lalu
+                valBtn.Text = opt .. " +"    -- overwrite dengan pilihan user
                 if callback then callback(opt) end
             end)
         end
@@ -576,26 +576,44 @@ local function _mkDropdown(parent, mainFrame, label, options, default, yOff, cal
 
     rebuildMenu(currentOpts)
 
+    -- open/close menu
+    local function openMenu()
+        local visibleItems = math.min(#currentOpts, MAX_SHOW)
+        local menuH        = visibleItems * ITEM_H
+        local absPos       = valBtn.AbsolutePosition
+        local framePos     = mainFrame.AbsolutePosition
+        local menuW        = valBtn.AbsoluteSize.X
+        dropMenu.Size      = UDim2.new(0, menuW, 0, menuH)
+        dropMenu.Position  = UDim2.new(
+            0, absPos.X - framePos.X,
+            0, absPos.Y - framePos.Y + valBtn.AbsoluteSize.Y + 4
+        )
+        scroll.CanvasSize  = UDim2.new(0, 0, 0, #currentOpts * ITEM_H)
+        dropMenu.Parent    = mainFrame
+        dropMenu.Visible   = true
+        open[1]            = true
+        local cur = valBtn.Text:gsub("%s*%+$", ""):gsub("%s*%-$", "")
+        valBtn.Text = cur .. " -"
+    end
+
     valBtn.MouseButton1Click:Connect(function()
-        open[1] = not open[1]
-        if open[1] then
-            local visibleItems = math.min(#currentOpts, MAX_SHOW)
-            local menuH        = visibleItems * ITEM_H
-            local absPos       = valBtn.AbsolutePosition
-            local framePos     = mainFrame.AbsolutePosition
-            local menuW        = valBtn.AbsoluteSize.X
-            dropMenu.Size      = UDim2.new(0, menuW, 0, menuH)
-            dropMenu.Position  = UDim2.new(
-                0, absPos.X - framePos.X,
-                0, absPos.Y - framePos.Y + valBtn.AbsoluteSize.Y + 4
-            )
-            scroll.CanvasSize  = UDim2.new(0, 0, 0, #currentOpts * ITEM_H)
-            dropMenu.Parent    = mainFrame
-            dropMenu.Visible   = true
-            -- show close indicator
-            local cur = valBtn.Text:gsub("%s*%+$", ""):gsub("%s*%-$", "")
-            valBtn.Text = cur .. " -"
-        else
+        if open[1] then closeMenu() else openMenu() end
+    end)
+
+    -- click outside: tutup saat klik di luar dropMenu & valBtn
+    UserInputService.InputBegan:Connect(function(input)
+        if not open[1] then return end
+        if input.UserInputType ~= Enum.UserInputType.MouseButton1
+        and input.UserInputType ~= Enum.UserInputType.Touch then return end
+        local pos = input.Position
+        local function isInside(gui)
+            if not gui or not gui.Visible then return false end
+            local ap = gui.AbsolutePosition
+            local as = gui.AbsoluteSize
+            return pos.X >= ap.X and pos.X <= ap.X + as.X
+               and pos.Y >= ap.Y and pos.Y <= ap.Y + as.Y
+        end
+        if not isInside(dropMenu) and not isInside(valBtn) then
             closeMenu()
         end
     end)
