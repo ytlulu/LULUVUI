@@ -316,25 +316,23 @@ local function _mkBtn(parent, text, yOff, h, col, theme, opts)
     b.TextColor3 = theme.textWhite
     b.BorderSizePixel = 0
     b.Parent = parent
-    mkCorner(b, 6)
+    mkCorner(b, 2)
 
-    -- Border solid warna accent
+    -- Border solid warna col
     local stroke = Instance.new("UIStroke", b)
-    stroke.Color       = col
-    stroke.Thickness   = 1.5
-    stroke.Transparency = 0
-    stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+    stroke.Color           = col
+    stroke.Thickness        = 1.5
+    stroke.Transparency     = 0
+    stroke.ApplyStrokeMode  = Enum.ApplyStrokeMode.Border
 
     -- Hover: full opaque
     b.MouseEnter:Connect(function()
         TweenService:Create(b, TweenInfo.new(0.15), {
-            BackgroundColor3    = col,
             BackgroundTransparency = 0,
         }):Play()
     end)
     b.MouseLeave:Connect(function()
         TweenService:Create(b, TweenInfo.new(0.15), {
-            BackgroundColor3    = col,
             BackgroundTransparency = 0.15,
         }):Play()
     end)
@@ -343,37 +341,44 @@ local function _mkBtn(parent, text, yOff, h, col, theme, opts)
 end
 
 -- Dua tombol setengah lebar berdampingan
--- colA default hijau (Start), colB default merah (Stop)
+-- colA/colB: bisa Color3 custom atau nil → fallback ke theme.accent / theme color
 local function _mkHalfBtns(parent, textA, textB, yOff, h, colA, colB, theme)
     h = h or 30
-    colA = colA or Color3.fromRGB(40, 180, 80)
-    colB = colB or Color3.fromRGB(200, 50, 50)
+    colA = colA or theme.accent
+    colB = colB or theme.accent
 
-    local bA = Instance.new("TextButton")
-    bA.Size = UDim2.new(0.5, -12, 0, h)
-    bA.Position = UDim2.new(0, 8, 0, yOff)
-    bA.BackgroundColor3 = colA
-    bA.Text = textA
-    bA.Font = Enum.Font.GothamBold
-    bA.TextSize = 11
-    bA.TextColor3 = theme.textWhite
-    bA.BorderSizePixel = 0
-    bA.Parent = parent
-    mkCorner(bA, 8)
-    makeHover(bA, colA, lighten(colA))
+    local function makeHalf(text, col, posX, sizeXOffset)
+        local b = Instance.new("TextButton")
+        b.Size                   = UDim2.new(0.5, sizeXOffset, 0, h)
+        b.Position               = UDim2.new(posX, posX == 0 and 8 or 4, 0, yOff)
+        b.BackgroundColor3       = col
+        b.BackgroundTransparency = 0.15
+        b.Text                   = text
+        b.Font                   = Enum.Font.GothamBold
+        b.TextSize               = 11
+        b.TextColor3             = theme.textWhite
+        b.BorderSizePixel        = 0
+        b.Parent                 = parent
+        mkCorner(b, 2)
 
-    local bB = Instance.new("TextButton")
-    bB.Size = UDim2.new(0.5, -12, 0, h)
-    bB.Position = UDim2.new(0.5, 4, 0, yOff)
-    bB.BackgroundColor3 = colB
-    bB.Text = textB
-    bB.Font = Enum.Font.GothamBold
-    bB.TextSize = 11
-    bB.TextColor3 = theme.textWhite
-    bB.BorderSizePixel = 0
-    bB.Parent = parent
-    mkCorner(bB, 8)
-    makeHover(bB, colB, lighten(colB))
+        local stroke = Instance.new("UIStroke", b)
+        stroke.Color           = col
+        stroke.Thickness        = 1.5
+        stroke.Transparency     = 0
+        stroke.ApplyStrokeMode  = Enum.ApplyStrokeMode.Border
+
+        b.MouseEnter:Connect(function()
+            TweenService:Create(b, TweenInfo.new(0.15), {BackgroundTransparency = 0}):Play()
+        end)
+        b.MouseLeave:Connect(function()
+            TweenService:Create(b, TweenInfo.new(0.15), {BackgroundTransparency = 0.15}):Play()
+        end)
+
+        return b
+    end
+
+    local bA = makeHalf(textA, colA, 0,  -12)
+    local bB = makeHalf(textB, colB, 0.5, -12)
 
     return bA, bB, h
 end
