@@ -1935,24 +1935,16 @@ function Section:Accordion(title, stateKeyOrFn, builderFnOrOpts, opts)
         end
 
         -- ── Nonaktifkan semua instance interaktif di dalam body secara rekursif ──
+        -- Disable semua widget interaktif di dalam body (flat, no recursion)
         -- Skip AccordionHeader supaya nested accordion masih bisa dibuka/tutup
-        -- Hanya disable widget: toggle, button, number input, textbox, dropdown
-        local visited = {}
-        local function disableAll(p)
-            if visited[p] then return end
-            visited[p] = true
-            for _, child in ipairs(p:GetChildren()) do
-                if child:IsA("TextButton") or child:IsA("TextBox") then
-                    if child.Name ~= "AccordionHeader" then
-                        child.Active          = false
-                        child.Selectable      = false
-                        child.AutoButtonColor = false
-                    end
-                end
-                disableAll(child)
+        for _, child in ipairs(body:GetDescendants()) do
+            if (child:IsA("TextButton") or child:IsA("TextBox"))
+            and child.Name ~= "AccordionHeader" then
+                child.Active          = false
+                child.Selectable      = false
+                child.AutoButtonColor = false
             end
         end
-        disableAll(body)
 
         -- ── Blocker transparan di atas HEADER supaya tidak bisa diklik ──
         local hdrBlocker = Instance.new("TextButton")
