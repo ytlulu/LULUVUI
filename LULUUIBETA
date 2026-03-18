@@ -347,10 +347,18 @@ local function _mkHalfBtns(parent, textA, textB, yOff, h, colA, colB, theme)
     colA = colA or theme.accent
     colB = colB or theme.accent
 
+    -- Wrapper frame supaya margin konsisten dengan widget lain
+    local wrapper = Instance.new("Frame")
+    wrapper.Size                 = UDim2.new(1, -16, 0, h)
+    wrapper.Position             = UDim2.new(0, 8, 0, yOff)
+    wrapper.BackgroundTransparency = 1
+    wrapper.BorderSizePixel      = 0
+    wrapper.Parent               = parent
+
     local function makeHalf(text, col, posX, sizeXOffset)
         local b = Instance.new("TextButton")
-        b.Size                   = UDim2.new(0.5, sizeXOffset, 0, h)
-        b.Position               = UDim2.new(posX, posX == 0 and 8 or 4, 0, yOff)
+        b.Size                   = UDim2.new(0.5, sizeXOffset, 1, 0)
+        b.Position               = UDim2.new(posX, posX == 0 and 0 or 4, 0, 0)
         b.BackgroundColor3       = col
         b.BackgroundTransparency = 0.15
         b.Text                   = text
@@ -358,11 +366,11 @@ local function _mkHalfBtns(parent, textA, textB, yOff, h, colA, colB, theme)
         b.TextSize               = 11
         b.TextColor3             = theme.textWhite
         b.BorderSizePixel        = 0
-        b.Parent                 = parent
+        b.Parent                 = wrapper
         mkCorner(b, 2)
 
         local stroke = Instance.new("UIStroke", b)
-        stroke.Color           = col
+        stroke.Color            = col
         stroke.Thickness        = 1.5
         stroke.Transparency     = 0
         stroke.ApplyStrokeMode  = Enum.ApplyStrokeMode.Border
@@ -377,8 +385,8 @@ local function _mkHalfBtns(parent, textA, textB, yOff, h, colA, colB, theme)
         return b
     end
 
-    local bA = makeHalf(textA, colA, 0,  -12)
-    local bB = makeHalf(textB, colB, 0.5, -12)
+    local bA = makeHalf(textA, colA, 0,   -2)
+    local bB = makeHalf(textB, colB, 0.5, -2)
 
     return bA, bB, h
 end
@@ -2688,6 +2696,7 @@ function Window:Tab(name)
 
     --  Section langsung aktif, widget dibangun sekali 
     local sec = Section.new(frame, self.mainFrame, theme, self._accordionStates, self._openMenuClosers)
+    sec._y = 8   -- top padding supaya widget pertama tidak nempel di ujung atas
 
     --  Tab data 
     local tab = {name = name, btn = btn, frame = frame, sec = sec}
