@@ -309,14 +309,36 @@ local function _mkBtn(parent, text, yOff, h, col, theme, opts)
     b.Size = UDim2.new(1, -16, 0, h or 30)
     b.Position = UDim2.new(0, 8, 0, yOff)
     b.BackgroundColor3 = col
+    b.BackgroundTransparency = 0.15   -- sedikit transparan, accent warna dasar
     b.Text = text
     b.Font = Enum.Font.GothamBold
     b.TextSize = 12
     b.TextColor3 = theme.textWhite
     b.BorderSizePixel = 0
     b.Parent = parent
-    mkCorner(b, 8)
-    makeHover(b, col, lighten(col))
+    mkCorner(b, 6)
+
+    -- Border solid warna accent
+    local stroke = Instance.new("UIStroke", b)
+    stroke.Color       = col
+    stroke.Thickness   = 1.5
+    stroke.Transparency = 0
+    stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+
+    -- Hover: full opaque
+    b.MouseEnter:Connect(function()
+        TweenService:Create(b, TweenInfo.new(0.15), {
+            BackgroundColor3    = col,
+            BackgroundTransparency = 0,
+        }):Play()
+    end)
+    b.MouseLeave:Connect(function()
+        TweenService:Create(b, TweenInfo.new(0.15), {
+            BackgroundColor3    = col,
+            BackgroundTransparency = 0.15,
+        }):Play()
+    end)
+
     return b, h or 30
 end
 
@@ -1807,6 +1829,7 @@ function Section:Accordion(title, stateKeyOrFn, builderFnOrOpts, opts)
 
     --  Header 
     local hdr = Instance.new("TextButton")
+    hdr.Name = "AccordionHeader"   -- tag supaya disableAll bisa skip ini
     hdr.Size = UDim2.new(1, -indentR, 0, 26)
     hdr.Position = UDim2.new(0, indentL, 0, yOff)
     hdr.BackgroundColor3 = theme.accordionBg
@@ -1896,48 +1919,80 @@ function Section:Accordion(title, stateKeyOrFn, builderFnOrOpts, opts)
     end)
 
     -- ══ LOCKED OVERLAY ══
-    -- opts.locked = true → tutup body dengan overlay hitam + gembok + teks "Fitur Locked"
+    -- opts.locked = true → tutup accordion dengan overlay hitam 97% + gembok + teks putih
     if opts.locked then
-        -- Overlay gelap di atas body (ZIndex tinggi supaya menutupi semua widget)
+        -- Pastikan accordion terbuka supaya isinya kelihatan (tapi tidak bisa diklik)
+        if not open[1] then
+            open[1] = true
+            accordionStates[stateKey] = true
+            body.Visible = true
+            hdr.Text = "  " .. title .. "  [-]"
+        end
+
+        -- ── Nonaktifkan semua instance interaktif di dalam body secara rekursif ──
+        -- Skip AccordionHeader supaya nested accordion masih bisa dibuka/tutup
+        -- Hanya disable widget: toggle, button, number input, textbox, dropdown
+        local function disableAll(p)
+            for _, child in ipairs(p:GetChildren()) do
+                if child:IsA("TextButton") or child:IsA("TextBox") then
+                    if child.Name ~= "AccordionHeader" then
+                        child.Active          = false
+                        child.Selectable      = false
+                        child.AutoButtonColor = false
+                    end
+                end
+                disableAll(child)
+            end
+        end
+        disableAll(body)
+
+        -- ── Blocker transparan di atas HEADER supaya tidak bisa diklik ──
+        local hdrBlocker = Instance.new("TextButton")
+        hdrBlocker.Size                   = UDim2.new(1, -indentR, 0, 26)
+        hdrBlocker.Position               = UDim2.new(0, indentL, 0, yOff)
+        hdrBlocker.BackgroundTransparency = 1
+        hdrBlocker.BorderSizePixel        = 0
+        hdrBlocker.Text                   = ""
+        hdrBlocker.ZIndex                 = 60
+        hdrBlocker.Parent                 = parent
+        hdrBlocker.MouseButton1Click:Connect(function() end)
+
+        -- ── Overlay utama di atas BODY (visual hitam 97% + gembok + teks) ──
         local lockOverlay = Instance.new("Frame")
-        lockOverlay.Size                 = UDim2.new(1, 0, 1, 0)
-        lockOverlay.Position             = UDim2.new(0, 0, 0, 0)
-        lockOverlay.BackgroundColor3     = Color3.fromRGB(0, 0, 0)
-        lockOverlay.BackgroundTransparency = 0.1   -- 90% opaque
-        lockOverlay.BorderSizePixel      = 0
-        lockOverlay.ZIndex               = 50
-        lockOverlay.Parent               = body
+        lockOverlay.Size                   = UDim2.new(1, 0, 1, 0)
+        lockOverlay.Position               = UDim2.new(0, 0, 0, 0)
+        lockOverlay.BackgroundColor3       = Color3.fromRGB(0, 0, 0)
+        lockOverlay.BackgroundTransparency = 0.03
+        lockOverlay.BorderSizePixel        = 0
+        lockOverlay.ZIndex                 = 60
+        lockOverlay.Parent                 = body
         mkCorner(lockOverlay, 6)
 
-        -- Gembok (ikon unicode)
+        -- Gembok 🔒
         local lockIcon = Instance.new("TextLabel")
-        lockIcon.Size                  = UDim2.new(1, 0, 0, 22)
-        lockIcon.Position              = UDim2.new(0, 0, 0.5, -22)
+        lockIcon.Size                   = UDim2.new(1, 0, 0, 24)
+        lockIcon.Position               = UDim2.new(0, 0, 0.5, -24)
         lockIcon.BackgroundTransparency = 1
-        lockIcon.Text                  = "🔒"
-        lockIcon.Font                  = Enum.Font.GothamBold
-        lockIcon.TextSize              = 18
-        lockIcon.TextColor3            = Color3.fromRGB(0, 0, 0)
-        lockIcon.TextXAlignment        = Enum.TextXAlignment.Center
-        lockIcon.ZIndex                = 51
-        lockIcon.Parent                = lockOverlay
+        lockIcon.Text                   = "🔒"
+        lockIcon.Font                   = Enum.Font.GothamBold
+        lockIcon.TextSize               = 20
+        lockIcon.TextColor3             = Color3.fromRGB(255, 255, 255)
+        lockIcon.TextXAlignment         = Enum.TextXAlignment.Center
+        lockIcon.ZIndex                 = 61
+        lockIcon.Parent                 = lockOverlay
 
         -- Teks "Fitur Locked"
         local lockLbl = Instance.new("TextLabel")
-        lockLbl.Size                  = UDim2.new(1, 0, 0, 16)
-        lockLbl.Position              = UDim2.new(0, 0, 0.5, 4)
+        lockLbl.Size                   = UDim2.new(1, 0, 0, 16)
+        lockLbl.Position               = UDim2.new(0, 0, 0.5, 4)
         lockLbl.BackgroundTransparency = 1
-        lockLbl.Text                  = "Fitur Locked"
-        lockLbl.Font                  = Enum.Font.GothamBold
-        lockLbl.TextSize              = 11
-        lockLbl.TextColor3            = Color3.fromRGB(0, 0, 0)
-        lockLbl.TextXAlignment        = Enum.TextXAlignment.Center
-        lockLbl.ZIndex                = 51
-        lockLbl.Parent                = lockOverlay
-
-        -- Header tidak bisa diklik (tutup interaction)
-        hdr.Active = false
-        hdr.AutoButtonColor = false
+        lockLbl.Text                   = "Fitur Locked"
+        lockLbl.Font                   = Enum.Font.GothamBold
+        lockLbl.TextSize               = 11
+        lockLbl.TextColor3             = Color3.fromRGB(255, 255, 255)
+        lockLbl.TextXAlignment         = Enum.TextXAlignment.Center
+        lockLbl.ZIndex                 = 61
+        lockLbl.Parent                 = lockOverlay
     end
 
     local addedH = 30 + (open[1] and innerH[1] or 0)
