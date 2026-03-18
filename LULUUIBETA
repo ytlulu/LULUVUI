@@ -1220,7 +1220,7 @@ local function _mkNumberInput(parent, labelText, yOff, defaultVal, step, minVal,
     -- Kotak nilai: TextBox supaya bisa diklik & ketik manual
     local valBox = Instance.new("TextBox")
     valBox.Size = UDim2.new(0, 38, 0, 22)
-    valBox.Position = UDim2.new(1, -64, 0.5, -11)
+    valBox.Position = UDim2.new(1, -64, 0.5, -8)
     valBox.BackgroundColor3 = theme.textWhite
     valBox.BorderSizePixel = 0
     valBox.Text = tostring(defaultVal)
@@ -1923,20 +1923,44 @@ function Section:Accordion(title, stateKeyOrFn, builderFnOrOpts, opts)
         if self._propUp then self._propUp(shift) end
     end)
 
-    -- ══ LOCKED OVERLAY ══
-    -- opts.locked = true → tutup accordion dengan overlay hitam 97% + gembok + teks putih
+    -- ══ LOCKED ══
+    -- opts.locked = true:
+    --   • Accordion tetap bisa open/close (tidak auto-open)
+    --   • Header dapat 🔒 di ujung kanan
+    --   • Semua nested AccordionHeader juga dapat 🔒
+    --   • Tiap widget row di body (direct children Frame) dapat overlay hitam 97% + 🔒
+    --   • Semua TextButton/TextBox di-disable
     if opts.locked then
-        -- Pastikan accordion terbuka supaya isinya kelihatan (tapi tidak bisa diklik)
-        if not open[1] then
-            open[1] = true
-            accordionStates[stateKey] = true
-            body.Visible = true
-            hdr.Text = "  " .. title .. "  [-]"
+
+        -- 1. Tambah 🔒 ke header utama
+        hdr.Text = "  " .. title .. "  🔒"
+
+        -- Override toggle agar teks tetap pakai 🔒
+        hdr.MouseButton1Click:Wait()  -- dummy — koneksi asli sudah ada di atas
+        -- (re-patch teks via connect tambahan)
+        hdr:GetPropertyChangedSignal("Text"):Connect(function()
+            local t = hdr.Text
+            if not t:find("🔒") then
+                hdr.Text = t:gsub("%s*%[.%]%s*$", "") .. "  🔒"
+            end
+        end)
+
+        -- 2. Tambah 🔒 ke semua nested AccordionHeader
+        for _, desc in ipairs(body:GetDescendants()) do
+            if desc:IsA("TextButton") and desc.Name == "AccordionHeader" then
+                if not desc.Text:find("🔒") then
+                    desc.Text = desc.Text:gsub("%s*%[.%]%s*$", "") .. "  🔒"
+                end
+                desc:GetPropertyChangedSignal("Text"):Connect(function()
+                    local t = desc.Text
+                    if not t:find("🔒") then
+                        desc.Text = t:gsub("%s*%[.%]%s*$", "") .. "  🔒"
+                    end
+                end)
+            end
         end
 
-        -- ── Nonaktifkan semua instance interaktif di dalam body secara rekursif ──
-        -- Disable semua widget interaktif di dalam body (flat, no recursion)
-        -- Skip AccordionHeader supaya nested accordion masih bisa dibuka/tutup
+        -- 3. Disable semua interaktif (kecuali AccordionHeader)
         for _, child in ipairs(body:GetDescendants()) do
             if child:IsA("TextButton") and child.Name ~= "AccordionHeader" then
                 pcall(function()
@@ -1953,53 +1977,53 @@ function Section:Accordion(title, stateKeyOrFn, builderFnOrOpts, opts)
             end
         end
 
-        -- ── Blocker transparan di atas HEADER supaya tidak bisa diklik ──
-        local hdrBlocker = Instance.new("TextButton")
-        hdrBlocker.Size                   = UDim2.new(1, -indentR, 0, 26)
-        hdrBlocker.Position               = UDim2.new(0, indentL, 0, yOff)
-        hdrBlocker.BackgroundTransparency = 1
-        hdrBlocker.BorderSizePixel        = 0
-        hdrBlocker.Text                   = ""
-        hdrBlocker.ZIndex                 = 60
-        hdrBlocker.Parent                 = parent
-        hdrBlocker.MouseButton1Click:Connect(function() end)
+        -- 4. Helper: tambah overlay hitam 97% + 🔒 ke sebuah Frame widget
+        local function addLockOverlay(frame)
+            if not frame:IsA("Frame") and not frame:IsA("TextButton") then return end
+            local ov = Instance.new("Frame")
+            ov.Size                   = UDim2.new(1, 0, 1, 0)
+            ov.Position               = UDim2.new(0, 0, 0, 0)
+            ov.BackgroundColor3       = Color3.fromRGB(0, 0, 0)
+            ov.BackgroundTransparency = 0.03
+            ov.BorderSizePixel        = 0
+            ov.ZIndex                 = 60
+            ov.Parent                 = frame
+            mkCorner(ov, 4)
 
-        -- ── Overlay utama di atas BODY (visual hitam 97% + gembok + teks) ──
-        local lockOverlay = Instance.new("Frame")
-        lockOverlay.Size                   = UDim2.new(1, 0, 1, 0)
-        lockOverlay.Position               = UDim2.new(0, 0, 0, 0)
-        lockOverlay.BackgroundColor3       = Color3.fromRGB(0, 0, 0)
-        lockOverlay.BackgroundTransparency = 0.03
-        lockOverlay.BorderSizePixel        = 0
-        lockOverlay.ZIndex                 = 60
-        lockOverlay.Parent                 = body
-        mkCorner(lockOverlay, 6)
+            local ic = Instance.new("TextLabel")
+            ic.Size                   = UDim2.new(0, 40, 1, 0)
+            ic.Position               = UDim2.new(1, -44, 0, 0)
+            ic.BackgroundTransparency = 1
+            ic.Text                   = "🔒"
+            ic.Font                   = Enum.Font.GothamBold
+            ic.TextSize               = 13
+            ic.TextColor3             = Color3.fromRGB(255, 255, 255)
+            ic.TextXAlignment         = Enum.TextXAlignment.Center
+            ic.ZIndex                 = 61
+            ic.Parent                 = ov
+        end
 
-        -- Gembok 🔒
-        local lockIcon = Instance.new("TextLabel")
-        lockIcon.Size                   = UDim2.new(1, 0, 0, 24)
-        lockIcon.Position               = UDim2.new(0, 0, 0.5, -24)
-        lockIcon.BackgroundTransparency = 1
-        lockIcon.Text                   = "🔒"
-        lockIcon.Font                   = Enum.Font.GothamBold
-        lockIcon.TextSize               = 20
-        lockIcon.TextColor3             = Color3.fromRGB(255, 255, 255)
-        lockIcon.TextXAlignment         = Enum.TextXAlignment.Center
-        lockIcon.ZIndex                 = 61
-        lockIcon.Parent                 = lockOverlay
+        -- 5. Tambah overlay ke setiap widget row di body (direct children)
+        --    dan juga direct children dari nested accordion body
+        local function overlayContainer(container)
+            for _, child in ipairs(container:GetChildren()) do
+                -- Skip AccordionHeader (sudah dapat 🔒 di teks)
+                if child.Name == "AccordionHeader" then
+                    -- skip
 
-        -- Teks "Fitur Locked"
-        local lockLbl = Instance.new("TextLabel")
-        lockLbl.Size                   = UDim2.new(1, 0, 0, 16)
-        lockLbl.Position               = UDim2.new(0, 0, 0.5, 4)
-        lockLbl.BackgroundTransparency = 1
-        lockLbl.Text                   = "Fitur Locked"
-        lockLbl.Font                   = Enum.Font.GothamBold
-        lockLbl.TextSize               = 11
-        lockLbl.TextColor3             = Color3.fromRGB(255, 255, 255)
-        lockLbl.TextXAlignment         = Enum.TextXAlignment.Center
-        lockLbl.ZIndex                 = 61
-        lockLbl.Parent                 = lockOverlay
+                -- Nested accordion body (Frame transparan di bawah AccordionHeader)
+                elseif child:IsA("Frame") and child.BackgroundTransparency == 1
+                    and child.BorderSizePixel == 0 and child.ClipsDescendants then
+                    -- Ini body nested accordion — overlay isinya juga
+                    overlayContainer(child)
+
+                -- Widget row biasa
+                elseif child:IsA("Frame") or child:IsA("TextButton") then
+                    addLockOverlay(child)
+                end
+            end
+        end
+        overlayContainer(body)
     end
 
     local addedH = 30 + (open[1] and innerH[1] or 0)
