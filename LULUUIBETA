@@ -306,7 +306,7 @@ local function _mkBtn(parent, text, yOff, h, col, theme, opts)
     local loadingText = opts.loading  -- nil = tidak ada loading state
 
     local b = Instance.new("TextButton")
-    b.Size = UDim2.new(1, -16, 0, h or 30)
+    b.Size = UDim2.new(1, -16, 0, h or 26)
     b.Position = UDim2.new(0, 8, 0, yOff)
     b.BackgroundColor3 = col
     b.BackgroundTransparency = 0.15   -- sedikit transparan, accent warna dasar
@@ -337,13 +337,13 @@ local function _mkBtn(parent, text, yOff, h, col, theme, opts)
         }):Play()
     end)
 
-    return b, h or 30
+    return b, h or 26
 end
 
 -- Dua tombol setengah lebar berdampingan
 -- colA/colB: bisa Color3 custom atau nil → fallback ke theme.accent / theme color
 local function _mkHalfBtns(parent, textA, textB, yOff, h, colA, colB, theme)
-    h = h or 30
+    h = h or 26
     colA = colA or theme.accent
     colB = colB or theme.accent
 
@@ -1687,7 +1687,7 @@ end
 --   contoh: tab:Button("Load", function(done) loadKata(); done() end, {loading="Loading..."})
 function Section:Button(text, callback, opts)
     opts = opts or {}
-    local h           = opts.height or 30
+    local h           = opts.height or 26
     local confirm     = opts.confirm
     local loadingText = opts.loading   -- teks saat proses, nil = tidak ada loading state
     local col         = opts.color or self._t.accent
@@ -1734,7 +1734,7 @@ end
 
 function Section:HalfButtons(textA, textB, cbA, cbB, opts)
     opts = opts or {}
-    local h = opts.height or 30
+    local h = opts.height or 26
     local bA, bB = _mkHalfBtns(self._c, textA, textB, self._y, h,
         opts.colorA, opts.colorB, self._t)
     if cbA then bA.MouseButton1Click:Connect(cbA) end
