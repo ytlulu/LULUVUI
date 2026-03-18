@@ -1925,19 +1925,13 @@ function Section:Accordion(title, stateKeyOrFn, builderFnOrOpts, opts)
 
     -- ══ LOCKED ══
     -- opts.locked = true:
-    --   • Accordion tetap bisa open/close (tidak auto-open)
-    --   • Header dapat 🔒 di ujung kanan
-    --   • Semua nested AccordionHeader juga dapat 🔒
-    --   • Tiap widget row di body (direct children Frame) dapat overlay hitam 97% + 🔒
-    --   • Semua TextButton/TextBox di-disable
+    --   • Header dapat 🔒, tetap bisa open/close
+    --   • Nested AccordionHeader juga dapat 🔒, tetap bisa open/close
+    --   • Tiap widget row dapat overlay TextButton hitam 97% yang absorb semua klik
     if opts.locked then
 
-        -- 1. Tambah 🔒 ke header utama
+        -- 1. Set teks header + patch setiap kali teks berubah (saat open/close)
         hdr.Text = "  " .. title .. "  🔒"
-
-        -- Override toggle agar teks tetap pakai 🔒
-        hdr.MouseButton1Click:Wait()  -- dummy — koneksi asli sudah ada di atas
-        -- (re-patch teks via connect tambahan)
         hdr:GetPropertyChangedSignal("Text"):Connect(function()
             local t = hdr.Text
             if not t:find("🔒") then
@@ -1945,12 +1939,10 @@ function Section:Accordion(title, stateKeyOrFn, builderFnOrOpts, opts)
             end
         end)
 
-        -- 2. Tambah 🔒 ke semua nested AccordionHeader
+        -- 2. Patch semua nested AccordionHeader yang sudah ada + yang akan dibuat
         for _, desc in ipairs(body:GetDescendants()) do
             if desc:IsA("TextButton") and desc.Name == "AccordionHeader" then
-                if not desc.Text:find("🔒") then
-                    desc.Text = desc.Text:gsub("%s*%[.%]%s*$", "") .. "  🔒"
-                end
+                desc.Text = desc.Text:gsub("%s*%[.%]%s*$", "") .. "  🔒"
                 desc:GetPropertyChangedSignal("Text"):Connect(function()
                     local t = desc.Text
                     if not t:find("🔒") then
@@ -1960,35 +1952,22 @@ function Section:Accordion(title, stateKeyOrFn, builderFnOrOpts, opts)
             end
         end
 
-        -- 3. Disable semua interaktif (kecuali AccordionHeader)
-        for _, child in ipairs(body:GetDescendants()) do
-            if child:IsA("TextButton") and child.Name ~= "AccordionHeader" then
-                pcall(function()
-                    child.Active          = false
-                    child.Selectable      = false
-                    child.AutoButtonColor = false
-                end)
-            elseif child:IsA("TextBox") then
-                pcall(function()
-                    child.Active     = false
-                    child.Selectable = false
-                    child.Editable   = false
-                end)
-            end
-        end
-
-        -- 4. Helper: tambah overlay hitam 97% + 🔒 ke sebuah Frame widget
+        -- 3. Helper: overlay TextButton (Active=true → absorb semua klik) + ikon 🔒
         local function addLockOverlay(frame)
-            if not frame:IsA("Frame") and not frame:IsA("TextButton") then return end
-            local ov = Instance.new("Frame")
+            local ov = Instance.new("TextButton")
             ov.Size                   = UDim2.new(1, 0, 1, 0)
             ov.Position               = UDim2.new(0, 0, 0, 0)
             ov.BackgroundColor3       = Color3.fromRGB(0, 0, 0)
             ov.BackgroundTransparency = 0.03
             ov.BorderSizePixel        = 0
+            ov.Text                   = ""
+            ov.Active                 = true
+            ov.AutoButtonColor        = false
             ov.ZIndex                 = 60
             ov.Parent                 = frame
             mkCorner(ov, 4)
+            -- Blok semua klik
+            ov.MouseButton1Click:Connect(function() end)
 
             local ic = Instance.new("TextLabel")
             ic.Size                   = UDim2.new(0, 40, 1, 0)
@@ -2003,21 +1982,18 @@ function Section:Accordion(title, stateKeyOrFn, builderFnOrOpts, opts)
             ic.Parent                 = ov
         end
 
-        -- 5. Tambah overlay ke setiap widget row di body (direct children)
-        --    dan juga direct children dari nested accordion body
+        -- 4. Tambah overlay ke widget rows, rekursif ke nested accordion body
         local function overlayContainer(container)
             for _, child in ipairs(container:GetChildren()) do
-                -- Skip AccordionHeader (sudah dapat 🔒 di teks)
                 if child.Name == "AccordionHeader" then
-                    -- skip
+                    -- skip: header tetap bisa diklik
 
-                -- Nested accordion body (Frame transparan di bawah AccordionHeader)
-                elseif child:IsA("Frame") and child.BackgroundTransparency == 1
-                    and child.BorderSizePixel == 0 and child.ClipsDescendants then
-                    -- Ini body nested accordion — overlay isinya juga
+                elseif child:IsA("Frame")
+                    and child.BackgroundTransparency == 1
+                    and child.ClipsDescendants == true then
+                    -- Ini nested accordion body → rekursif ke dalamnya
                     overlayContainer(child)
 
-                -- Widget row biasa
                 elseif child:IsA("Frame") or child:IsA("TextButton") then
                     addLockOverlay(child)
                 end
