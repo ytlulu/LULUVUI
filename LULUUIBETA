@@ -1938,11 +1938,18 @@ function Section:Accordion(title, stateKeyOrFn, builderFnOrOpts, opts)
         -- Disable semua widget interaktif di dalam body (flat, no recursion)
         -- Skip AccordionHeader supaya nested accordion masih bisa dibuka/tutup
         for _, child in ipairs(body:GetDescendants()) do
-            if (child:IsA("TextButton") or child:IsA("TextBox"))
-            and child.Name ~= "AccordionHeader" then
-                child.Active          = false
-                child.Selectable      = false
-                child.AutoButtonColor = false
+            if child:IsA("TextButton") and child.Name ~= "AccordionHeader" then
+                pcall(function()
+                    child.Active          = false
+                    child.Selectable      = false
+                    child.AutoButtonColor = false
+                end)
+            elseif child:IsA("TextBox") then
+                pcall(function()
+                    child.Active     = false
+                    child.Selectable = false
+                    child.Editable   = false
+                end)
             end
         end
 
