@@ -1937,7 +1937,10 @@ function Section:Accordion(title, stateKeyOrFn, builderFnOrOpts, opts)
         -- ── Nonaktifkan semua instance interaktif di dalam body secara rekursif ──
         -- Skip AccordionHeader supaya nested accordion masih bisa dibuka/tutup
         -- Hanya disable widget: toggle, button, number input, textbox, dropdown
+        local visited = {}
         local function disableAll(p)
+            if visited[p] then return end
+            visited[p] = true
             for _, child in ipairs(p:GetChildren()) do
                 if child:IsA("TextButton") or child:IsA("TextBox") then
                     if child.Name ~= "AccordionHeader" then
