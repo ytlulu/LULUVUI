@@ -1895,6 +1895,51 @@ function Section:Accordion(title, stateKeyOrFn, builderFnOrOpts, opts)
         if self._propUp then self._propUp(shift) end
     end)
 
+    -- ══ LOCKED OVERLAY ══
+    -- opts.locked = true → tutup body dengan overlay hitam + gembok + teks "Fitur Locked"
+    if opts.locked then
+        -- Overlay gelap di atas body (ZIndex tinggi supaya menutupi semua widget)
+        local lockOverlay = Instance.new("Frame")
+        lockOverlay.Size                 = UDim2.new(1, 0, 1, 0)
+        lockOverlay.Position             = UDim2.new(0, 0, 0, 0)
+        lockOverlay.BackgroundColor3     = Color3.fromRGB(0, 0, 0)
+        lockOverlay.BackgroundTransparency = 0.1   -- 90% opaque
+        lockOverlay.BorderSizePixel      = 0
+        lockOverlay.ZIndex               = 50
+        lockOverlay.Parent               = body
+        mkCorner(lockOverlay, 6)
+
+        -- Gembok (ikon unicode)
+        local lockIcon = Instance.new("TextLabel")
+        lockIcon.Size                  = UDim2.new(1, 0, 0, 22)
+        lockIcon.Position              = UDim2.new(0, 0, 0.5, -22)
+        lockIcon.BackgroundTransparency = 1
+        lockIcon.Text                  = "🔒"
+        lockIcon.Font                  = Enum.Font.GothamBold
+        lockIcon.TextSize              = 18
+        lockIcon.TextColor3            = Color3.fromRGB(0, 0, 0)
+        lockIcon.TextXAlignment        = Enum.TextXAlignment.Center
+        lockIcon.ZIndex                = 51
+        lockIcon.Parent                = lockOverlay
+
+        -- Teks "Fitur Locked"
+        local lockLbl = Instance.new("TextLabel")
+        lockLbl.Size                  = UDim2.new(1, 0, 0, 16)
+        lockLbl.Position              = UDim2.new(0, 0, 0.5, 4)
+        lockLbl.BackgroundTransparency = 1
+        lockLbl.Text                  = "Fitur Locked"
+        lockLbl.Font                  = Enum.Font.GothamBold
+        lockLbl.TextSize              = 11
+        lockLbl.TextColor3            = Color3.fromRGB(0, 0, 0)
+        lockLbl.TextXAlignment        = Enum.TextXAlignment.Center
+        lockLbl.ZIndex                = 51
+        lockLbl.Parent                = lockOverlay
+
+        -- Header tidak bisa diklik (tutup interaction)
+        hdr.Active = false
+        hdr.AutoButtonColor = false
+    end
+
     local addedH = 30 + (open[1] and innerH[1] or 0)
     self._y = yOff + addedH + (opts.gap or 4)
     return inner
