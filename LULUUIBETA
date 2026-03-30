@@ -1,5 +1,5 @@
 -- ============================================================
---   LuluUI Library v1.2[Beta]
+--   LuluUI Library v1.2
 --   Usage: local LuluUI = loadstring(game:HttpGet("URL"))()
 -- ============================================================
 
@@ -3060,6 +3060,370 @@ function Window:InfoPanel(cfg)
     function api:Hide()   panel.Visible = false           end
     function api:Toggle() panel.Visible = not panel.Visible end
 
+    return api
+end
+
+-- ============================================================
+-- LOCATION PANEL  (overlay draggable, panel lokasi + perf row)
+-- API:
+--   :AddLocation(name, position)   → tambah lokasi
+--   :RemoveLocation(name)          → hapus lokasi
+--   :Refresh()                     → rebuild daftar baris
+--   :SetCount(n)                   → update badge
+--   :Show() / :Hide() / :Toggle()
+--
+-- Setiap tombol di baris bersifat TOGGLE:
+--   Klik 1 → simpan posisi awal, jalankan walkFn(targetPos)
+--   Klik 2 → jalankan walkFn(posisi awal yang disimpan)
+--   dst. bolak-balik setiap klik
+--
+-- cfg: width(205), height(310), position, visible
+-- walkFn: function(targetPosition: Vector3) → dipanggil saat tombol diklik
+-- ============================================================
+function Window:LocationPanel(cfg, walkFn)
+    cfg     = cfg     or {}
+    walkFn  = walkFn  or function() end
+
+    local theme  = self._theme
+    local panelW = cfg.width    or 205
+    local panelH = cfg.height   or 310
+    local HDR_H  = 33
+    local PERF_H = 30
+    local PAD    = 4
+
+    -- ScreenGui terpisah supaya layering independen
+    local sg = Instance.new("ScreenGui")
+    sg.Name           = "LuluUI_LocationPanel"
+    sg.ResetOnSpawn   = false
+    sg.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+    sg.Enabled        = cfg.visible ~= false
+    sg.Parent         = self.screenGui.Parent   -- sama dengan parent main UI
+
+    -- ── Frame utama ──────────────────────────────────────────
+    local frame = Instance.new("Frame", sg)
+    frame.Name             = "LocationPanel"
+    frame.Size             = UDim2.new(0, panelW, 0, panelH)
+    frame.Position         = cfg.position or UDim2.new(0.76, 0, 0.25, 0)
+    frame.BackgroundColor3 = theme.windowBg
+    frame.BorderSizePixel  = 0
+    mkCorner(frame, 10)
+
+    -- Glow shadow
+    local glow = Instance.new("Frame", frame)
+    glow.Size                   = UDim2.new(1, 14, 1, 14)
+    glow.Position               = UDim2.new(0, -7, 0, -7)
+    glow.BackgroundColor3       = theme.shadow
+    glow.BackgroundTransparency = 0.82
+    glow.BorderSizePixel        = 0
+    glow.ZIndex                 = frame.ZIndex - 1
+    mkCorner(glow, 14)
+
+    -- ── Header (drag handle) ─────────────────────────────────
+    local hdr = Instance.new("Frame", frame)
+    hdr.Name             = "Header"
+    hdr.Size             = UDim2.new(1, 0, 0, HDR_H)
+    hdr.BackgroundColor3 = theme.accent
+    hdr.BorderSizePixel  = 0
+    mkCorner(hdr, 10)
+
+    -- Fix sudut bawah header
+    local hFix = Instance.new("Frame", hdr)
+    hFix.Size             = UDim2.new(1, 0, 0.5, 0)
+    hFix.Position         = UDim2.new(0, 0, 0.5, 0)
+    hFix.BackgroundColor3 = theme.accent
+    hFix.BorderSizePixel  = 0
+
+    local hTitle = Instance.new("TextLabel", hdr)
+    hTitle.Size                   = UDim2.new(1, -75, 1, 0)
+    hTitle.Position               = UDim2.new(0, 10, 0, 0)
+    hTitle.BackgroundTransparency = 1
+    hTitle.Text                   = "📍 Lokasi"
+    hTitle.Font                   = Enum.Font.GothamBold
+    hTitle.TextSize               = 13
+    hTitle.TextColor3             = theme.textWhite
+    hTitle.TextXAlignment         = Enum.TextXAlignment.Left
+
+    -- Badge jumlah lokasi
+    local badge = Instance.new("TextLabel", hdr)
+    badge.Size                   = UDim2.new(0, 56, 0, 20)
+    badge.Position               = UDim2.new(1, -62, 0.5, -10)
+    badge.BackgroundColor3       = theme.accentDark
+    badge.BackgroundTransparency = 0.2
+    badge.Text                   = "0 loc"
+    badge.Font                   = Enum.Font.GothamBold
+    badge.TextSize               = 10
+    badge.TextColor3             = theme.textWhite
+    badge.BorderSizePixel        = 0
+    mkCorner(badge, 6)
+
+    -- ── Perf Row (FPS / CPU / PING) ──────────────────────────
+    local perfRow = Instance.new("Frame", frame)
+    perfRow.Size             = UDim2.new(1, -8, 0, PERF_H)
+    perfRow.Position         = UDim2.new(0, 4, 0, HDR_H + 4)
+    perfRow.BackgroundColor3 = theme.accentDark
+    perfRow.BorderSizePixel  = 0
+    mkCorner(perfRow, 6)
+
+    local function mkPerfCell(xScale, label)
+        local cell = Instance.new("Frame", perfRow)
+        cell.Size                 = UDim2.new(1/3, 0, 1, 0)
+        cell.Position             = UDim2.new(xScale, 0, 0, 0)
+        cell.BackgroundTransparency = 1
+
+        local lh = Instance.new("TextLabel", cell)
+        lh.Size                   = UDim2.new(1, 0, 0, 11)
+        lh.Position               = UDim2.new(0, 0, 0, 2)
+        lh.BackgroundTransparency = 1
+        lh.Text                   = label
+        lh.Font                   = Enum.Font.Gotham
+        lh.TextSize               = 8
+        lh.TextColor3             = theme.textLight
+        lh.TextXAlignment         = Enum.TextXAlignment.Center
+
+        local lv = Instance.new("TextLabel", cell)
+        lv.Size                   = UDim2.new(1, 0, 0, 13)
+        lv.Position               = UDim2.new(0, 0, 0, 13)
+        lv.BackgroundTransparency = 1
+        lv.Text                   = "—"
+        lv.Font                   = Enum.Font.GothamBold
+        lv.TextSize               = 11
+        lv.TextColor3             = theme.textWhite
+        lv.TextXAlignment         = Enum.TextXAlignment.Center
+        return lv
+    end
+
+    local function mkPerfDiv(xScale)
+        local d = Instance.new("Frame", perfRow)
+        d.Size             = UDim2.new(0, 1, 0.65, 0)
+        d.Position         = UDim2.new(xScale, 0, 0.175, 0)
+        d.BackgroundColor3 = theme.divider
+        d.BorderSizePixel  = 0
+    end
+
+    local lblFPS  = mkPerfCell(0,   "FPS")
+    local lblCPU  = mkPerfCell(1/3, "CPU")
+    local lblPing = mkPerfCell(2/3, "PING")
+    mkPerfDiv(1/3)
+    mkPerfDiv(2/3)
+
+    -- Auto-update perf stats
+    local _fpsCount = 0
+    local _lastDt   = 0
+    local RunService = game:GetService("RunService")
+    local rsConn = RunService.RenderStepped:Connect(function(dt)
+        _fpsCount = _fpsCount + 1
+        _lastDt   = dt
+    end)
+    frame.AncestryChanged:Connect(function()
+        if not frame.Parent then pcall(function() rsConn:Disconnect() end) end
+    end)
+    task.spawn(function()
+        while frame and frame.Parent do
+            task.wait(0.5)
+            if sg.Enabled then
+                lblFPS.Text  = tostring(_fpsCount * 2)
+                _fpsCount    = 0
+                lblCPU.Text  = tostring(math.floor(_lastDt * 1000)) .. "ms"
+                local ping = 0
+                pcall(function()
+                    ping = math.floor(game:GetService("Players").LocalPlayer:GetNetworkPing() * 1000)
+                end)
+                lblPing.Text = tostring(ping)
+            end
+        end
+    end)
+
+    -- ── ScrollingFrame ───────────────────────────────────────
+    local scrollTop = HDR_H + PERF_H + PAD * 2 + 6
+    local scroll = Instance.new("ScrollingFrame", frame)
+    scroll.Size                  = UDim2.new(1, -8, 1, -(scrollTop + 4))
+    scroll.Position              = UDim2.new(0, 4, 0, scrollTop)
+    scroll.BackgroundTransparency = 1
+    scroll.BorderSizePixel       = 0
+    scroll.ScrollBarThickness    = 4
+    scroll.ScrollBarImageColor3  = theme.accent
+    scroll.AutomaticCanvasSize   = Enum.AutomaticCanvasSize.Y
+    scroll.CanvasSize            = UDim2.new(0, 0, 0, 0)
+
+    local layout = Instance.new("UIListLayout", scroll)
+    layout.Padding   = UDim.new(0, 4)
+    layout.SortOrder = Enum.SortOrder.LayoutOrder
+
+    local pad = Instance.new("UIPadding", scroll)
+    pad.PaddingTop   = UDim.new(0, 4)
+    pad.PaddingLeft  = UDim.new(0, 2)
+    pad.PaddingRight = UDim.new(0, 2)
+
+    -- Label kosong
+    local emptyLbl = Instance.new("TextLabel", scroll)
+    emptyLbl.Name                   = "EmptyLbl"
+    emptyLbl.LayoutOrder            = 9999
+    emptyLbl.Size                   = UDim2.new(1, 0, 0, 40)
+    emptyLbl.BackgroundTransparency = 1
+    emptyLbl.Text                   = "Belum ada lokasi ditambahkan"
+    emptyLbl.Font                   = Enum.Font.Gotham
+    emptyLbl.TextSize               = 11
+    emptyLbl.TextColor3             = theme.textLight
+    emptyLbl.TextXAlignment         = Enum.TextXAlignment.Center
+
+    -- ── State internal ────────────────────────────────────────
+    local locations  = {}   -- { name, position }
+    local originMap  = {}   -- [name] = Vector3 posisi awal sebelum walk pertama
+    local activeMap  = {}   -- [name] = true jika sedang "di lokasi" (sudah walk ke sana)
+
+    -- ── Drag ─────────────────────────────────────────────────
+    local dragging, dragStart, startPos = false, nil, nil
+    hdr.InputBegan:Connect(function(inp)
+        if inp.UserInputType == Enum.UserInputType.MouseButton1
+        or inp.UserInputType == Enum.UserInputType.Touch then
+            dragging  = true
+            dragStart = inp.Position
+            startPos  = frame.Position
+            inp.Changed:Connect(function()
+                if inp.UserInputState == Enum.UserInputState.End then
+                    dragging = false
+                end
+            end)
+        end
+    end)
+    UserInputService.InputChanged:Connect(function(inp)
+        if dragging
+        and (inp.UserInputType == Enum.UserInputType.MouseMovement
+          or inp.UserInputType == Enum.UserInputType.Touch) then
+            local d = inp.Position - dragStart
+            frame.Position = UDim2.new(
+                startPos.X.Scale, startPos.X.Offset + d.X,
+                startPos.Y.Scale, startPos.Y.Offset + d.Y
+            )
+        end
+    end)
+
+    -- ── API ───────────────────────────────────────────────────
+    local api = {}
+
+    -- Rebuild semua baris lokasi
+    function api:Refresh()
+        for _, child in ipairs(scroll:GetChildren()) do
+            if child:IsA("Frame") then child:Destroy() end
+        end
+
+        badge.Text         = #locations .. " loc"
+        emptyLbl.Visible   = (#locations == 0)
+
+        for i, loc in ipairs(locations) do
+            local row = Instance.new("Frame", scroll)
+            row.Name             = "Loc_" .. i
+            row.Size             = UDim2.new(1, -4, 0, 36)
+            row.BackgroundColor3 = theme.contentBg
+            row.BorderSizePixel  = 0
+            row.LayoutOrder      = i
+            mkCorner(row, 6)
+
+            -- Nama lokasi
+            local nameLbl = Instance.new("TextLabel", row)
+            nameLbl.Size                  = UDim2.new(1, -84, 1, 0)
+            nameLbl.Position              = UDim2.new(0, 8, 0, 0)
+            nameLbl.BackgroundTransparency = 1
+            nameLbl.Text                  = loc.name
+            nameLbl.Font                  = Enum.Font.Gotham
+            nameLbl.TextSize              = 12
+            nameLbl.TextColor3            = theme.text
+            nameLbl.TextXAlignment        = Enum.TextXAlignment.Left
+            nameLbl.TextTruncate          = Enum.TextTruncate.AtEnd
+
+            -- Tombol toggle Walk / Back
+            local isActive = activeMap[loc.name] == true
+            local btnColor = isActive and theme.toggleOn or theme.accent
+
+            local btn = Instance.new("TextButton", row)
+            btn.Size             = UDim2.new(0, 68, 0, 26)
+            btn.Position         = UDim2.new(1, -74, 0.5, -13)
+            btn.BackgroundColor3 = btnColor
+            btn.BorderSizePixel  = 0
+            btn.Text             = isActive and "↩ Back" or "Walk"
+            btn.Font             = Enum.Font.GothamBold
+            btn.TextSize         = 11
+            btn.TextColor3       = theme.textWhite
+            mkCorner(btn, 5)
+
+            -- Hover
+            btn.MouseEnter:Connect(function()
+                TweenService:Create(btn, TweenInfo.new(0.12), {
+                    BackgroundColor3 = lighten(btn.BackgroundColor3, 20)
+                }):Play()
+            end)
+            btn.MouseLeave:Connect(function()
+                TweenService:Create(btn, TweenInfo.new(0.12), {
+                    BackgroundColor3 = activeMap[loc.name] and theme.toggleOn or theme.accent
+                }):Play()
+            end)
+
+            local capturedName = loc.name
+            local capturedPos  = loc.position
+
+            btn.MouseButton1Click:Connect(function()
+                if not activeMap[capturedName] then
+                    -- Klik 1: simpan posisi saat ini, jalan ke lokasi
+                    local hrp = game:GetService("Players").LocalPlayer.Character
+                        and game:GetService("Players").LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+                    if hrp then
+                        originMap[capturedName] = hrp.Position
+                    end
+                    activeMap[capturedName] = true
+                    btn.Text             = "↩ Back"
+                    btn.BackgroundColor3 = theme.toggleOn
+                    walkFn(capturedPos)
+                else
+                    -- Klik 2: balik ke posisi asal
+                    activeMap[capturedName] = false
+                    btn.Text             = "Walk"
+                    btn.BackgroundColor3 = theme.accent
+                    local origin = originMap[capturedName]
+                    if origin then
+                        walkFn(origin)
+                        originMap[capturedName] = nil
+                    end
+                end
+            end)
+        end
+    end
+
+    function api:AddLocation(name, position)
+        -- Cegah duplikat
+        for _, loc in ipairs(locations) do
+            if loc.name == name then return false end
+        end
+        table.insert(locations, { name = name, position = position })
+        api:Refresh()
+        return true
+    end
+
+    function api:RemoveLocation(name)
+        for i, loc in ipairs(locations) do
+            if loc.name == name then
+                table.remove(locations, i)
+                activeMap[name]  = nil
+                originMap[name]  = nil
+                api:Refresh()
+                return true
+            end
+        end
+        return false
+    end
+
+    function api:SetCount(n)
+        badge.Text = tostring(n) .. " loc"
+    end
+
+    function api:GetLocations()
+        return locations
+    end
+
+    function api:Show()   sg.Enabled = true            end
+    function api:Hide()   sg.Enabled = false           end
+    function api:Toggle() sg.Enabled = not sg.Enabled  end
+
+    api:Refresh()
     return api
 end
 
