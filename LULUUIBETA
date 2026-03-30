@@ -3066,19 +3066,18 @@ end
 -- ============================================================
 -- LOCATION PANEL  (overlay draggable, panel lokasi + perf row)
 -- API:
---   :AddLocation(name, position)   → tambah lokasi
---   :RemoveLocation(name)          → hapus lokasi
---   :Refresh()                     → rebuild daftar baris
---   :SetCount(n)                   → update badge
+--   :AddLocation(name, lanes)    → tambah lokasi (lanes = {Vector3,...})
+--   :RemoveLocation(name)        → hapus lokasi
+--   :Refresh()                   → rebuild daftar baris
 --   :Show() / :Hide() / :Toggle()
 --
--- Setiap tombol di baris bersifat TOGGLE:
---   Klik 1 → simpan posisi awal, jalankan walkFn(targetPos)
---   Klik 2 → jalankan walkFn(posisi awal yang disimpan)
---   dst. bolak-balik setiap klik
+-- Tombol tiap baris toggle Walk ↔ Back:
+--   Klik 1 → tombol jadi "↩ Back", panggil walkFn(name, lanes)
+--   Klik 2 → tombol jadi "Walk",   panggil walkFn(name, lanes)
+--   Logika walk/back ditangani oleh walkFn di luar (di script)
 --
 -- cfg: width(205), height(310), position, visible
--- walkFn: function(targetPosition: Vector3) → dipanggil saat tombol diklik
+-- walkFn: function(name: string, lanes: {Vector3}) → dipanggil saat tombol diklik
 -- ============================================================
 function Window:LocationPanel(cfg, walkFn)
     cfg     = cfg     or {}
@@ -3267,7 +3266,7 @@ function Window:LocationPanel(cfg, walkFn)
     emptyLbl.TextXAlignment         = Enum.TextXAlignment.Center
 
     -- ── State internal ────────────────────────────────────────
-    local locations  = {}   -- { name, position }
+    local locations  = {}   -- { name, lanes={Vector3,...} }
     local originMap  = {}   -- [name] = Vector3 posisi awal sebelum walk pertama
     local activeMap  = {}   -- [name] = true jika sedang "di lokasi" (sudah walk ke sana)
 
@@ -3358,42 +3357,36 @@ function Window:LocationPanel(cfg, walkFn)
                 }):Play()
             end)
 
-            local capturedName = loc.name
-            local capturedPos  = loc.position
+            local capturedName  = loc.name
+            local capturedLanes = loc.lanes
 
             btn.MouseButton1Click:Connect(function()
-                if not activeMap[capturedName] then
-                    -- Klik 1: simpan posisi saat ini, jalan ke lokasi
-                    local hrp = game:GetService("Players").LocalPlayer.Character
-                        and game:GetService("Players").LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-                    if hrp then
-                        originMap[capturedName] = hrp.Position
-                    end
-                    activeMap[capturedName] = true
+                -- Toggle state tombol
+                activeMap[capturedName] = not activeMap[capturedName]
+                if activeMap[capturedName] then
                     btn.Text             = "↩ Back"
                     btn.BackgroundColor3 = theme.toggleOn
-                    walkFn(capturedPos)
                 else
-                    -- Klik 2: balik ke posisi asal
-                    activeMap[capturedName] = false
                     btn.Text             = "Walk"
                     btn.BackgroundColor3 = theme.accent
-                    local origin = originMap[capturedName]
-                    if origin then
-                        walkFn(origin)
-                        originMap[capturedName] = nil
-                    end
                 end
+                -- Serahkan logika walk/back ke walkFn di script
+                walkFn(capturedName, capturedLanes)
             end)
         end
     end
 
-    function api:AddLocation(name, position)
+    function api:AddLocation(name, lanes)
         -- Cegah duplikat
         for _, loc in ipairs(locations) do
             if loc.name == name then return false end
         end
-        table.insert(locations, { name = name, position = position })
+        -- lanes harus table of Vector3
+        local safeLanes = {}
+        if type(lanes) == "table" then
+            for _, v in ipairs(lanes) do table.insert(safeLanes, v) end
+        end
+        table.insert(locations, { name = name, lanes = safeLanes })
         api:Refresh()
         return true
     end
