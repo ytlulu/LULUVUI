@@ -1834,36 +1834,40 @@ function Section:Accordion(title, stateKeyOrFn, builderFnOrOpts, opts)
     local yOff            = self._y
     local parent          = self._c
 
-    -- Indent visual per level (lv.1 = 8px, lv.2 = 20px, lv.3 = 32px dst)
+    -- Indent 10px per level: lv.0=0px, lv.1=10px, lv.2=20px dst
     local depth   = (opts._depth or 0)
-    local indentL = 8 + depth * 12
-    local indentR = 16
+    local indentL = depth * 10
+    local indentR = 16 + indentL   -- sisi kanan ikut supaya lebar konsisten
+
+    -- Arrow: ▼ = terbuka, ▲ = tertutup
+    local ARROW_OPEN   = " ▼"
+    local ARROW_CLOSED = " ▲"
 
     --  Header 
     local hdr = Instance.new("TextButton")
-    hdr.Name = "AccordionHeader"   -- tag supaya disableAll bisa skip ini
-    hdr.Size = UDim2.new(1, -indentR, 0, 26)
-    hdr.Position = UDim2.new(0, indentL, 0, yOff)
+    hdr.Name             = "AccordionHeader"   -- tag supaya disableAll bisa skip ini
+    hdr.Size             = UDim2.new(1, -indentR, 0, 26)
+    hdr.Position         = UDim2.new(0, indentL, 0, yOff)
     hdr.BackgroundColor3 = theme.accordionBg
-    hdr.BorderSizePixel = 0
-    hdr.Text = "  " .. title .. (open[1] and "  [-]" or "  [+]")
-    hdr.Font = Enum.Font.GothamBold
-    hdr.TextSize = 10
-    hdr.TextColor3 = theme.accordionTxt
-    hdr.TextXAlignment = Enum.TextXAlignment.Left
-    hdr.ZIndex = 2
-    hdr.Parent = parent
+    hdr.BorderSizePixel  = 0
+    hdr.Text             = "  " .. title .. (open[1] and ARROW_OPEN or ARROW_CLOSED)
+    hdr.Font             = Enum.Font.GothamBold
+    hdr.TextSize         = 10
+    hdr.TextColor3       = theme.accordionTxt
+    hdr.TextXAlignment   = Enum.TextXAlignment.Left
+    hdr.ZIndex           = 2
+    hdr.Parent           = parent
     mkCorner(hdr, 7)
 
-    --  Body 
+    --  Body — posisi X sejajar dengan header (indentL) 
     local body = Instance.new("Frame")
-    body.Size = UDim2.new(1, 0, 0, 0)
-    body.Position = UDim2.new(0, 0, 0, yOff + 30)
+    body.Size                 = UDim2.new(1, -indentL, 0, 0)
+    body.Position             = UDim2.new(0, indentL, 0, yOff + 30)
     body.BackgroundTransparency = 1
-    body.BorderSizePixel = 0
-    body.ClipsDescendants = true
-    body.Visible = open[1]
-    body.Parent = parent
+    body.BorderSizePixel      = 0
+    body.ClipsDescendants     = true
+    body.Visible              = open[1]
+    body.Parent               = parent
 
     -- innerH sebagai mutable ref supaya propUpFn bisa update nilainya
     local innerH = {0}
@@ -1873,7 +1877,7 @@ function Section:Accordion(title, stateKeyOrFn, builderFnOrOpts, opts)
     local selfRef = self
     local function propUpFn(delta)
         innerH[1] = innerH[1] + delta
-        body.Size = UDim2.new(1, 0, 0, body.Size.Y.Offset + delta)
+        body.Size = UDim2.new(1, -indentL, 0, body.Size.Y.Offset + delta)
         if open[1] then
             local threshold = hdr.Position.Y.Offset + 26
             for _, child in ipairs(parent:GetChildren()) do
@@ -1897,18 +1901,19 @@ function Section:Accordion(title, stateKeyOrFn, builderFnOrOpts, opts)
     --  Build isi → ukur tinggi otomatis 
     -- Wariskan _as, _cl, dan propUpFn supaya nested accordion auto-managed & bisa bubble
     local inner = Section.new(body, self._mf, theme, self._as, self._cl, propUpFn)
-    inner._accordionDepth = depth + 1   -- info tambahan (opsional dipakai builder)
+    inner._accordionDepth = depth + 1
+    inner._depth          = depth + 1   -- diteruskan lewat opts._depth saat nested Accordion dipanggil
     if builderFn then builderFn(inner) end
     innerH[1] = inner._y + 8
 
-    body.Size = UDim2.new(1, 0, 0, innerH[1])
+    body.Size = UDim2.new(1, -indentL, 0, innerH[1])
 
     --  Toggle 
     hdr.MouseButton1Click:Connect(function()
         open[1] = not open[1]
         accordionStates[stateKey] = open[1]
         body.Visible = open[1]
-        hdr.Text = "  " .. title .. (open[1] and "  [-]" or "  [+]")
+        hdr.Text = "  " .. title .. (open[1] and ARROW_OPEN or ARROW_CLOSED)
         local shift = open[1] and innerH[1] or -innerH[1]
         local threshold = hdr.Position.Y.Offset + 26
         for _, child in ipairs(parent:GetChildren()) do
@@ -1942,18 +1947,18 @@ function Section:Accordion(title, stateKeyOrFn, builderFnOrOpts, opts)
         hdr:GetPropertyChangedSignal("Text"):Connect(function()
             local t = hdr.Text
             if not t:find("🔒") then
-                hdr.Text = t:gsub("%s*%[.%]%s*$", "") .. "  🔒"
+                hdr.Text = t:gsub("%s*[▼▲]%s*$", "") .. "  🔒"
             end
         end)
 
         -- 2. Patch semua nested AccordionHeader yang sudah ada + yang akan dibuat
         for _, desc in ipairs(body:GetDescendants()) do
             if desc:IsA("TextButton") and desc.Name == "AccordionHeader" then
-                desc.Text = desc.Text:gsub("%s*%[.%]%s*$", "") .. "  🔒"
+                desc.Text = desc.Text:gsub("%s*[▼▲]%s*$", "") .. "  🔒"
                 desc:GetPropertyChangedSignal("Text"):Connect(function()
                     local t = desc.Text
                     if not t:find("🔒") then
-                        desc.Text = t:gsub("%s*%[.%]%s*$", "") .. "  🔒"
+                        desc.Text = t:gsub("%s*[▼▲]%s*$", "") .. "  🔒"
                     end
                 end)
             end
