@@ -1834,20 +1834,22 @@ function Section:Accordion(title, stateKeyOrFn, builderFnOrOpts, opts)
     local yOff            = self._y
     local parent          = self._c
 
-    -- Indent 10px per level: lv.0=0px, lv.1=10px, lv.2=20px dst
-    local depth   = (opts._depth or 0)
-    local indentL = depth * 10
-    local indentR = 16 + indentL   -- sisi kanan ikut supaya lebar konsisten
+    -- Indent RELATIF: header accordion selalu 10px dari tepi kiri body induknya.
+    -- Body induk sudah di posisi yang benar → anak cukup +10px relatif.
+    -- Widget non-accordion (Button, Toggle, dll) tidak kena indent ini karena
+    -- mereka dibuat oleh _mk* helpers yang pakai Position tetap sendiri.
+    local INDENT = 10   -- px menjorok dari tepi kiri body induk
+    local MARGIN_R = 16 -- margin kanan tetap
 
     -- Arrow: ▼ = terbuka, ▲ = tertutup
     local ARROW_OPEN   = " ▼"
     local ARROW_CLOSED = " ▲"
 
-    --  Header 
+    --  Header — menjorok INDENT px dari kiri body induk, ujung kanan sejajar
     local hdr = Instance.new("TextButton")
-    hdr.Name             = "AccordionHeader"   -- tag supaya disableAll bisa skip ini
-    hdr.Size             = UDim2.new(1, -indentR, 0, 26)
-    hdr.Position         = UDim2.new(0, indentL, 0, yOff)
+    hdr.Name             = "AccordionHeader"
+    hdr.Size             = UDim2.new(1, -(INDENT + MARGIN_R), 0, 26)
+    hdr.Position         = UDim2.new(0, INDENT, 0, yOff)
     hdr.BackgroundColor3 = theme.accordionBg
     hdr.BorderSizePixel  = 0
     hdr.Text             = "  " .. title .. (open[1] and ARROW_OPEN or ARROW_CLOSED)
@@ -1859,10 +1861,11 @@ function Section:Accordion(title, stateKeyOrFn, builderFnOrOpts, opts)
     hdr.Parent           = parent
     mkCorner(hdr, 7)
 
-    --  Body — posisi X sejajar dengan header (indentL) 
+    --  Body — mulai tepat di bawah header, lebar full body induk (X=0)
+    --  Nested accordion di dalamnya akan indent +INDENT relatif dari sini
     local body = Instance.new("Frame")
-    body.Size                 = UDim2.new(1, -indentL, 0, 0)
-    body.Position             = UDim2.new(0, indentL, 0, yOff + 30)
+    body.Size                 = UDim2.new(1, 0, 0, 0)
+    body.Position             = UDim2.new(0, 0, 0, yOff + 30)
     body.BackgroundTransparency = 1
     body.BorderSizePixel      = 0
     body.ClipsDescendants     = true
@@ -1873,11 +1876,10 @@ function Section:Accordion(title, stateKeyOrFn, builderFnOrOpts, opts)
     local innerH = {0}
 
     -- propUpFn: dipanggil oleh inner Section saat ada nested accordion toggle
-    -- Ini yang bikin lv.3+ bekerja: resize body + shift siblings + bubble up
     local selfRef = self
     local function propUpFn(delta)
         innerH[1] = innerH[1] + delta
-        body.Size = UDim2.new(1, -indentL, 0, body.Size.Y.Offset + delta)
+        body.Size = UDim2.new(1, 0, 0, body.Size.Y.Offset + delta)
         if open[1] then
             local threshold = hdr.Position.Y.Offset + 26
             for _, child in ipairs(parent:GetChildren()) do
@@ -1899,14 +1901,13 @@ function Section:Accordion(title, stateKeyOrFn, builderFnOrOpts, opts)
     end
 
     --  Build isi → ukur tinggi otomatis 
-    -- Wariskan _as, _cl, dan propUpFn supaya nested accordion auto-managed & bisa bubble
+    -- depth tidak diteruskan: indent sudah relatif terhadap body masing-masing level
     local inner = Section.new(body, self._mf, theme, self._as, self._cl, propUpFn)
-    inner._accordionDepth = depth + 1
-    inner._depth          = depth + 1   -- diteruskan lewat opts._depth saat nested Accordion dipanggil
+    inner._accordionDepth = (opts._depth or 0) + 1
     if builderFn then builderFn(inner) end
     innerH[1] = inner._y + 8
 
-    body.Size = UDim2.new(1, -indentL, 0, innerH[1])
+    body.Size = UDim2.new(1, 0, 0, innerH[1])
 
     --  Toggle 
     hdr.MouseButton1Click:Connect(function()
