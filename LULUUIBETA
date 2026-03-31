@@ -271,12 +271,16 @@ end
 -- ============================================================
 
 -- Label teks biasa
-local function _mkLabel(parent, text, yOff, h, size, bold, color, theme)
+local function _mkLabel(parent, text, yOff, h, size, bold, color, theme, depth)
+    depth = depth or 0
+    local ML     = 8 + depth * 10
+    local MR     = 8
+    local prefix = depth > 0 and "└ " or ""
     local l = Instance.new("TextLabel")
-    l.Size = UDim2.new(1, -16, 0, h or 20)
-    l.Position = UDim2.new(0, 8, 0, yOff)
+    l.Size = UDim2.new(1, -(ML + MR), 0, h or 20)
+    l.Position = UDim2.new(0, ML, 0, yOff)
     l.BackgroundTransparency = 1
-    l.Text = text
+    l.Text = prefix .. text
     l.Font = bold and Enum.Font.GothamBold or Enum.Font.Gotham
     l.TextSize = size or 12
     l.TextColor3 = color or theme.textWhite
@@ -286,11 +290,13 @@ local function _mkLabel(parent, text, yOff, h, size, bold, color, theme)
     return l, h or 20
 end
 
--- Garis divider
-local function _mkDivider(parent, yOff, theme)
+local function _mkDivider(parent, yOff, theme, depth)
+    depth = depth or 0
+    local ML = 8 + depth * 10
+    local MR = 8
     local d = Instance.new("Frame")
-    d.Size = UDim2.new(1, -16, 0, 1)
-    d.Position = UDim2.new(0, 8, 0, yOff)
+    d.Size = UDim2.new(1, -(ML + MR), 0, 1)
+    d.Position = UDim2.new(0, ML, 0, yOff)
     d.BackgroundColor3 = theme.divider
     d.BorderSizePixel = 0
     d.Parent = parent
@@ -299,17 +305,21 @@ end
 
 -- opts.loading → string teks saat loading (misal "Loading...")
 --                kalau ada, callback menerima fn done() → panggil untuk balik normal
-local function _mkBtn(parent, text, yOff, h, col, theme, opts)
+local function _mkBtn(parent, text, yOff, h, col, theme, opts, depth)
     opts = opts or {}
+    depth = depth or 0
+    local ML     = 8 + depth * 10
+    local MR     = 8
+    local prefix = depth > 0 and "└ " or ""
     col = col or theme.accent
-    local loadingText = opts.loading  -- nil = tidak ada loading state
+    local loadingText = opts.loading
 
     local b = Instance.new("TextButton")
-    b.Size = UDim2.new(1, -16, 0, h or 26)
-    b.Position = UDim2.new(0, 8, 0, yOff)
+    b.Size = UDim2.new(1, -(ML + MR), 0, h or 26)
+    b.Position = UDim2.new(0, ML, 0, yOff)
     b.BackgroundColor3 = col
-    b.BackgroundTransparency = 0.15   -- sedikit transparan, accent warna dasar
-    b.Text = text
+    b.BackgroundTransparency = 0.15
+    b.Text = prefix .. text
     b.Font = Enum.Font.GothamBold
     b.TextSize = 12
     b.TextColor3 = theme.textWhite
@@ -393,16 +403,20 @@ end
 -- Toggle switch
 -- opts.subtext  → string, kalau ada maka tinggi 48px dan ada subtext di bawah label
 -- opts.disabled → bool, kalau true: greyed out, tidak bisa diklik
-local function _mkToggle(parent, label, yOff, default, callback, theme, opts)
+local function _mkToggle(parent, label, yOff, default, callback, theme, opts, depth)
     opts = opts or {}
+    depth = depth or 0
+    local ML = 8 + depth * 10
+    local MR = 8
+    local prefix = depth > 0 and "└ " or ""
     local subtext  = opts.subtext
     local disabled = opts.disabled == true
     local totalH   = subtext and 48 or 28
 
     local state = {default}
     local bg = Instance.new("Frame")
-    bg.Size = UDim2.new(1, -16, 0, totalH)
-    bg.Position = UDim2.new(0, 8, 0, yOff)
+    bg.Size = UDim2.new(1, -(ML + MR), 0, totalH)
+    bg.Position = UDim2.new(0, ML, 0, yOff)
     bg.BackgroundColor3 = disabled and theme.divider or theme.contentBg
     bg.BorderSizePixel = 0
     bg.Parent = parent
@@ -415,7 +429,7 @@ local function _mkToggle(parent, label, yOff, default, callback, theme, opts)
         lbl.Size = UDim2.new(1, -60, 0, 18)
         lbl.Position = UDim2.new(0, 10, 0, 8)
         lbl.BackgroundTransparency = 1
-        lbl.Text = label
+        lbl.Text = prefix .. label
         lbl.Font = Enum.Font.GothamBold
         lbl.TextSize = 10
         lbl.TextColor3 = textColor
@@ -437,7 +451,7 @@ local function _mkToggle(parent, label, yOff, default, callback, theme, opts)
         lbl.Size = UDim2.new(1, -60, 1, 0)
         lbl.Position = UDim2.new(0, 10, 0, 0)
         lbl.BackgroundTransparency = 1
-        lbl.Text = label
+        lbl.Text = prefix .. label
         lbl.Font = Enum.Font.Gotham
         lbl.TextSize = 10
         lbl.TextColor3 = textColor
@@ -492,13 +506,17 @@ end
 -- Return: bg, 32, proxy
 -- proxy:SetOptions(newOpts, keepValue?)  → update opsi tanpa rebuild widget
 -- proxy:SetValue(text)                  → set label tombol secara manual
-local function _mkDropdown(parent, mainFrame, label, options, default, yOff, callback, theme, closers)
+local function _mkDropdown(parent, mainFrame, label, options, default, yOff, callback, theme, closers, depth)
+    depth = depth or 0
+    local ML     = 8 + depth * 10
+    local MR     = 8
+    local prefix = depth > 0 and "└ " or ""
     local open        = {false}
     local currentOpts = options
 
     local bg = Instance.new("Frame")
-    bg.Size = UDim2.new(1, -16, 0, 28)
-    bg.Position = UDim2.new(0, 8, 0, yOff)
+    bg.Size = UDim2.new(1, -(ML + MR), 0, 28)
+    bg.Position = UDim2.new(0, ML, 0, yOff)
     bg.BackgroundColor3 = theme.contentBg
     bg.BorderSizePixel = 0
     bg.ClipsDescendants = false
@@ -510,7 +528,7 @@ local function _mkDropdown(parent, mainFrame, label, options, default, yOff, cal
     lbl.Size = UDim2.new(0.4, -14, 1, 0)
     lbl.Position = UDim2.new(0, 10, 0, 0)
     lbl.BackgroundTransparency = 1
-    lbl.Text = label
+    lbl.Text = prefix .. label
     lbl.Font = Enum.Font.Gotham
     lbl.TextSize = 10
     lbl.TextColor3 = theme.text
@@ -672,7 +690,11 @@ local function _mkDropdown(parent, mainFrame, label, options, default, yOff, cal
 end
 
 -- Multi-select Dropdown
-local function _mkMultiDropdown(parent, mainFrame, label, options, defaults, yOff, callback, theme)
+local function _mkMultiDropdown(parent, mainFrame, label, options, defaults, yOff, callback, theme, depth)
+    depth = depth or 0
+    local ML     = 8 + depth * 10
+    local MR     = 8
+    local prefix = depth > 0 and "└ " or ""
     local open    = {false}
     local selected = {}  -- set: selected[opt] = true
 
@@ -697,8 +719,8 @@ local function _mkMultiDropdown(parent, mainFrame, label, options, defaults, yOf
     end
 
     local bg = Instance.new("Frame")
-    bg.Size = UDim2.new(1, -16, 0, 28)
-    bg.Position = UDim2.new(0, 8, 0, yOff)
+    bg.Size = UDim2.new(1, -(ML + MR), 0, 28)
+    bg.Position = UDim2.new(0, ML, 0, yOff)
     bg.BackgroundColor3 = theme.contentBg
     bg.BorderSizePixel = 0
     bg.ClipsDescendants = false
@@ -710,7 +732,7 @@ local function _mkMultiDropdown(parent, mainFrame, label, options, defaults, yOf
     lbl.Size = UDim2.new(0.4, -14, 1, 0)
     lbl.Position = UDim2.new(0, 10, 0, 0)
     lbl.BackgroundTransparency = 1
-    lbl.Text = label
+    lbl.Text = prefix .. label
     lbl.Font = Enum.Font.Gotham
     lbl.TextSize = 10
     lbl.TextColor3 = theme.text
@@ -871,13 +893,17 @@ end
 -- opts.placeholder, opts.maxLen, opts.clearOnSubmit
 -- callback(text) dipanggil saat Enter / tombol 
 -- ============================================================
-local function _mkTextInput(parent, label, yOff, default, callback, theme, opts)
+local function _mkTextInput(parent, label, yOff, default, callback, theme, opts, depth)
     opts = opts or {}
+    depth = depth or 0
+    local ML     = 8 + depth * 10
+    local MR     = 8
+    local prefix = depth > 0 and "└ " or ""
     local totalH = 58
 
     local bg = Instance.new("Frame")
-    bg.Size = UDim2.new(1, -16, 0, totalH)
-    bg.Position = UDim2.new(0, 8, 0, yOff)
+    bg.Size = UDim2.new(1, -(ML + MR), 0, totalH)
+    bg.Position = UDim2.new(0, ML, 0, yOff)
     bg.BackgroundColor3 = theme.contentBg
     bg.BorderSizePixel = 0
     bg.Parent = parent
@@ -888,7 +914,7 @@ local function _mkTextInput(parent, label, yOff, default, callback, theme, opts)
     lbl.Size = UDim2.new(1, -12, 0, 16)
     lbl.Position = UDim2.new(0, 8, 0, 6)
     lbl.BackgroundTransparency = 1
-    lbl.Text = label
+    lbl.Text = prefix .. label
     lbl.Font = Enum.Font.Gotham
     lbl.TextSize = 10
     lbl.TextColor3 = theme.accordionTxt
@@ -1190,12 +1216,16 @@ end
 
 -- Number input (− | [ketik] | +)
 -- Nilai di tengah bisa diklik untuk ketik manual, Enter/blur untuk konfirmasi
-local function _mkNumberInput(parent, labelText, yOff, defaultVal, step, minVal, maxVal, callback, theme)
+local function _mkNumberInput(parent, labelText, yOff, defaultVal, step, minVal, maxVal, callback, theme, depth)
+    depth = depth or 0
+    local ML     = 8 + depth * 10
+    local MR     = 8
+    local prefix = depth > 0 and "└ " or ""
     local cur = {defaultVal}
 
     local bg = Instance.new("Frame")
-    bg.Size = UDim2.new(1, -16, 0, 30)
-    bg.Position = UDim2.new(0, 8, 0, yOff)
+    bg.Size = UDim2.new(1, -(ML + MR), 0, 30)
+    bg.Position = UDim2.new(0, ML, 0, yOff)
     bg.BackgroundColor3 = theme.contentBg
     bg.BorderSizePixel = 0
     bg.Parent = parent
@@ -1205,7 +1235,7 @@ local function _mkNumberInput(parent, labelText, yOff, defaultVal, step, minVal,
     lbl.Size = UDim2.new(0.5, 0, 1, 0)
     lbl.Position = UDim2.new(0, 8, 0, 0)
     lbl.BackgroundTransparency = 1
-    lbl.Text = labelText
+    lbl.Text = prefix .. labelText
     lbl.Font = Enum.Font.Gotham
     lbl.TextSize = 10
     lbl.TextColor3 = theme.text
@@ -1630,15 +1660,16 @@ Section.__index = Section
 
 -- accordionStates sekarang optional — kalau nil, library auto-manage internal
 -- closers: tabel shared dari Window._openMenuClosers — dipakai Dropdown untuk register closeMenu
-function Section.new(container, mainFrame, theme, accordionStates, closers, propUp)
+function Section.new(container, mainFrame, theme, accordionStates, closers, propUp, depth)
     return setmetatable({
         _c      = container,
         _mf     = mainFrame,
         _t      = theme,
         _as     = accordionStates or {},
-        _cl     = closers or {},   -- shared registry: {fn, fn, ...}
+        _cl     = closers or {},
         _y      = 0,
-        _propUp = propUp or nil,   -- callback(delta): propagate height change ke parent accordion
+        _propUp = propUp or nil,
+        _depth  = depth or 0,   -- kedalaman accordion (0 = root, 1 = anak, dst)
     }, Section)
 end
 
@@ -1647,13 +1678,13 @@ local DEFAULT_GAP = 6
 function Section:Label(text, opts)
     opts = opts or {}
     local h = opts.height or 20
-    _mkLabel(self._c, text, self._y, h, opts.size, opts.bold, opts.color, self._t)
+    _mkLabel(self._c, text, self._y, h, opts.size, opts.bold, opts.color, self._t, self._depth)
     self._y = self._y + h + (opts.gap or 4)
 end
 
 function Section:Divider(opts)
     opts = opts or {}
-    _mkDivider(self._c, self._y, self._t)
+    _mkDivider(self._c, self._y, self._t, self._depth)
     self._y = self._y + 1 + (opts.gap or 8)
 end
 
@@ -1691,7 +1722,7 @@ function Section:Button(text, callback, opts)
     local loadingText = opts.loading   -- teks saat proses, nil = tidak ada loading state
     local col         = opts.color or self._t.accent
 
-    local b, _ = _mkBtn(self._c, text, self._y, h, col, self._t, opts)
+    local b, _ = _mkBtn(self._c, text, self._y, h, col, self._t, opts, self._depth)
 
     if callback then
         b.MouseButton1Click:Connect(function()
@@ -1744,13 +1775,13 @@ end
 
 function Section:Toggle(label, default, callback, opts)
     opts = opts or {}
-    local _, h = _mkToggle(self._c, label, self._y, default, callback, self._t, opts)
+    local _, h = _mkToggle(self._c, label, self._y, default, callback, self._t, opts, self._depth)
     self._y = self._y + h + (opts.gap or DEFAULT_GAP)
 end
 
 function Section:Dropdown(label, options, default, callback, opts)
     opts = opts or {}
-    local _, _, proxy = _mkDropdown(self._c, self._mf, label, options, default, self._y, callback, self._t, self._cl)
+    local _, _, proxy = _mkDropdown(self._c, self._mf, label, options, default, self._y, callback, self._t, self._cl, self._depth)
     self._y = self._y + 28 + (opts.gap or DEFAULT_GAP)
     return proxy
 end
@@ -1760,13 +1791,13 @@ end
 -- callback(selectedTable) dipanggil tiap pilihan berubah
 function Section:MultiDropdown(label, options, defaults, callback, opts)
     opts = opts or {}
-    _mkMultiDropdown(self._c, self._mf, label, options, defaults, self._y, callback, self._t)
+    _mkMultiDropdown(self._c, self._mf, label, options, defaults, self._y, callback, self._t, self._depth)
     self._y = self._y + 28 + (opts.gap or DEFAULT_GAP)
 end
 
 function Section:NumberInput(label, default, step, minVal, maxVal, callback, opts)
     opts = opts or {}
-    _mkNumberInput(self._c, label, self._y, default, step, minVal, maxVal, callback, self._t)
+    _mkNumberInput(self._c, label, self._y, default, step, minVal, maxVal, callback, self._t, self._depth)
     self._y = self._y + 30 + (opts.gap or DEFAULT_GAP)
 end
 
@@ -1776,7 +1807,7 @@ end
 -- return: TextBox instance (bisa baca/set .Text)
 function Section:TextInput(label, default, callback, opts)
     opts = opts or {}
-    local _, h, box = _mkTextInput(self._c, label, self._y, default, callback, self._t, opts)
+    local _, h, box = _mkTextInput(self._c, label, self._y, default, callback, self._t, opts, self._depth)
     self._y = self._y + h + (opts.gap or DEFAULT_GAP)
     return box
 end
@@ -1834,25 +1865,23 @@ function Section:Accordion(title, stateKeyOrFn, builderFnOrOpts, opts)
     local yOff            = self._y
     local parent          = self._c
 
-    -- Indent RELATIF: header accordion selalu 10px dari tepi kiri body induknya.
-    -- Body induk sudah di posisi yang benar → anak cukup +10px relatif.
-    -- Widget non-accordion (Button, Toggle, dll) tidak kena indent ini karena
-    -- mereka dibuat oleh _mk* helpers yang pakai Position tetap sendiri.
-    local INDENT = 10   -- px menjorok dari tepi kiri body induk
-    local MARGIN_R = 8  -- margin kanan sejajar widget lain (widget lain: pos x=8, size -16 → ujung kanan di -8)
+    local depth    = self._depth or 0
+    local HDR_ML   = 8 + depth * 10
+    local HDR_MR   = 8
+    local hdrPrefix = depth > 0 and "└ " or "  "
 
     -- Arrow: ▼ = terbuka, ▲ = tertutup
     local ARROW_OPEN   = " ▼"
     local ARROW_CLOSED = " ▲"
 
-    --  Header — menjorok INDENT px dari kiri body induk, ujung kanan sejajar
+    --  Header — kiri naik per depth, kanan selalu 8px
     local hdr = Instance.new("TextButton")
     hdr.Name             = "AccordionHeader"
-    hdr.Size             = UDim2.new(1, -(INDENT + MARGIN_R), 0, 28)
-    hdr.Position         = UDim2.new(0, INDENT, 0, yOff)
+    hdr.Size             = UDim2.new(1, -(HDR_ML + HDR_MR), 0, 28)
+    hdr.Position         = UDim2.new(0, HDR_ML, 0, yOff)
     hdr.BackgroundColor3 = theme.accordionBg
     hdr.BorderSizePixel  = 0
-    hdr.Text             = "  " .. title .. (open[1] and ARROW_OPEN or ARROW_CLOSED)
+    hdr.Text             = hdrPrefix .. title .. (open[1] and ARROW_OPEN or ARROW_CLOSED)
     hdr.Font             = Enum.Font.GothamBold
     hdr.TextSize         = 10
     hdr.TextColor3       = theme.accordionTxt
@@ -1902,7 +1931,7 @@ function Section:Accordion(title, stateKeyOrFn, builderFnOrOpts, opts)
 
     --  Build isi → ukur tinggi otomatis 
     -- depth tidak diteruskan: indent sudah relatif terhadap body masing-masing level
-    local inner = Section.new(body, self._mf, theme, self._as, self._cl, propUpFn)
+    local inner = Section.new(body, self._mf, theme, self._as, self._cl, propUpFn, (self._depth or 0) + 1)
     inner._accordionDepth = (opts._depth or 0) + 1
     if builderFn then builderFn(inner) end
     innerH[1] = inner._y + 8
@@ -1914,7 +1943,7 @@ function Section:Accordion(title, stateKeyOrFn, builderFnOrOpts, opts)
         open[1] = not open[1]
         accordionStates[stateKey] = open[1]
         body.Visible = open[1]
-        hdr.Text = "  " .. title .. (open[1] and ARROW_OPEN or ARROW_CLOSED)
+        hdr.Text = hdrPrefix .. title .. (open[1] and ARROW_OPEN or ARROW_CLOSED)
         local shift = open[1] and innerH[1] or -innerH[1]
         local threshold = hdr.Position.Y.Offset + 28
         for _, child in ipairs(parent:GetChildren()) do
@@ -1944,7 +1973,7 @@ function Section:Accordion(title, stateKeyOrFn, builderFnOrOpts, opts)
     if opts.locked then
 
         -- 1. Set teks header + patch setiap kali teks berubah (saat open/close)
-        hdr.Text = "  " .. title .. "  🔒"
+        hdr.Text = hdrPrefix .. title .. "  🔒"
         hdr:GetPropertyChangedSignal("Text"):Connect(function()
             local t = hdr.Text
             if not t:find("🔒") then
