@@ -417,7 +417,7 @@ local function _mkToggle(parent, label, yOff, default, callback, theme, opts)
         lbl.BackgroundTransparency = 1
         lbl.Text = label
         lbl.Font = Enum.Font.GothamBold
-        lbl.TextSize = 13
+        lbl.TextSize = 10
         lbl.TextColor3 = textColor
         lbl.TextXAlignment = Enum.TextXAlignment.Left
         lbl.Parent = bg
@@ -439,7 +439,7 @@ local function _mkToggle(parent, label, yOff, default, callback, theme, opts)
         lbl.BackgroundTransparency = 1
         lbl.Text = label
         lbl.Font = Enum.Font.Gotham
-        lbl.TextSize = 12
+        lbl.TextSize = 10
         lbl.TextColor3 = textColor
         lbl.TextXAlignment = Enum.TextXAlignment.Left
         lbl.Parent = bg
@@ -497,7 +497,7 @@ local function _mkDropdown(parent, mainFrame, label, options, default, yOff, cal
     local currentOpts = options
 
     local bg = Instance.new("Frame")
-    bg.Size = UDim2.new(1, -16, 0, 32)
+    bg.Size = UDim2.new(1, -16, 0, 28)
     bg.Position = UDim2.new(0, 8, 0, yOff)
     bg.BackgroundColor3 = theme.contentBg
     bg.BorderSizePixel = 0
@@ -512,7 +512,7 @@ local function _mkDropdown(parent, mainFrame, label, options, default, yOff, cal
     lbl.BackgroundTransparency = 1
     lbl.Text = label
     lbl.Font = Enum.Font.Gotham
-    lbl.TextSize = 12
+    lbl.TextSize = 10
     lbl.TextColor3 = theme.text
     lbl.TextXAlignment = Enum.TextXAlignment.Left
     lbl.TextTruncate = Enum.TextTruncate.AtEnd
@@ -520,12 +520,12 @@ local function _mkDropdown(parent, mainFrame, label, options, default, yOff, cal
 
     -- Tombol kanan: stretch ngikut sisa lebar row
     local valBtn = Instance.new("TextButton")
-    valBtn.Size = UDim2.new(0.6, -14, 0, 24)
-    valBtn.Position = UDim2.new(0.4, 6, 0.5, -12)
+    valBtn.Size = UDim2.new(0.6, -14, 0, 20)
+    valBtn.Position = UDim2.new(0.4, 6, 0.5, -10)
     valBtn.BackgroundColor3 = theme.accent
     valBtn.Text = default .. " +"
     valBtn.Font = Enum.Font.GothamBold
-    valBtn.TextSize = 11
+    valBtn.TextSize = 10
     valBtn.TextColor3 = theme.textWhite
     valBtn.BorderSizePixel = 0
     valBtn.TextTruncate = Enum.TextTruncate.AtEnd
@@ -668,7 +668,7 @@ local function _mkDropdown(parent, mainFrame, label, options, default, yOff, cal
         valBtn.Text = text .. " +"
     end
 
-    return bg, 32, proxy
+    return bg, 28, proxy
 end
 
 -- Multi-select Dropdown
@@ -697,7 +697,7 @@ local function _mkMultiDropdown(parent, mainFrame, label, options, defaults, yOf
     end
 
     local bg = Instance.new("Frame")
-    bg.Size = UDim2.new(1, -16, 0, 32)
+    bg.Size = UDim2.new(1, -16, 0, 28)
     bg.Position = UDim2.new(0, 8, 0, yOff)
     bg.BackgroundColor3 = theme.contentBg
     bg.BorderSizePixel = 0
@@ -712,7 +712,7 @@ local function _mkMultiDropdown(parent, mainFrame, label, options, defaults, yOf
     lbl.BackgroundTransparency = 1
     lbl.Text = label
     lbl.Font = Enum.Font.Gotham
-    lbl.TextSize = 12
+    lbl.TextSize = 10
     lbl.TextColor3 = theme.text
     lbl.TextXAlignment = Enum.TextXAlignment.Left
     lbl.TextTruncate = Enum.TextTruncate.AtEnd
@@ -720,12 +720,12 @@ local function _mkMultiDropdown(parent, mainFrame, label, options, defaults, yOf
 
     -- Tombol kanan: stretch ngikut sisa lebar row
     local valBtn = Instance.new("TextButton")
-    valBtn.Size = UDim2.new(0.6, -14, 0, 24)
-    valBtn.Position = UDim2.new(0.4, 6, 0.5, -12)
+    valBtn.Size = UDim2.new(0.6, -14, 0, 20)
+    valBtn.Position = UDim2.new(0.4, 6, 0.5, -10)
     valBtn.BackgroundColor3 = theme.accent
     valBtn.Text = getLabel()
     valBtn.Font = Enum.Font.GothamBold
-    valBtn.TextSize = 11
+    valBtn.TextSize = 10
     valBtn.TextColor3 = theme.textWhite
     valBtn.BorderSizePixel = 0
     valBtn.TextTruncate = Enum.TextTruncate.AtEnd
@@ -862,7 +862,7 @@ local function _mkMultiDropdown(parent, mainFrame, label, options, defaults, yOf
         end
     end)
 
-    return bg, 32
+    return bg, 28
 end
 
 -- ============================================================
@@ -1751,7 +1751,7 @@ end
 function Section:Dropdown(label, options, default, callback, opts)
     opts = opts or {}
     local _, _, proxy = _mkDropdown(self._c, self._mf, label, options, default, self._y, callback, self._t, self._cl)
-    self._y = self._y + 32 + (opts.gap or DEFAULT_GAP)
+    self._y = self._y + 28 + (opts.gap or DEFAULT_GAP)
     return proxy
 end
 
@@ -1761,7 +1761,7 @@ end
 function Section:MultiDropdown(label, options, defaults, callback, opts)
     opts = opts or {}
     _mkMultiDropdown(self._c, self._mf, label, options, defaults, self._y, callback, self._t)
-    self._y = self._y + 32 + (opts.gap or DEFAULT_GAP)
+    self._y = self._y + 28 + (opts.gap or DEFAULT_GAP)
 end
 
 function Section:NumberInput(label, default, step, minVal, maxVal, callback, opts)
@@ -1839,7 +1839,7 @@ function Section:Accordion(title, stateKeyOrFn, builderFnOrOpts, opts)
     -- Widget non-accordion (Button, Toggle, dll) tidak kena indent ini karena
     -- mereka dibuat oleh _mk* helpers yang pakai Position tetap sendiri.
     local INDENT = 10   -- px menjorok dari tepi kiri body induk
-    local MARGIN_R = 16 -- margin kanan tetap
+    local MARGIN_R = 8  -- margin kanan sejajar widget lain (widget lain: pos x=8, size -16 → ujung kanan di -8)
 
     -- Arrow: ▼ = terbuka, ▲ = tertutup
     local ARROW_OPEN   = " ▼"
@@ -1848,7 +1848,7 @@ function Section:Accordion(title, stateKeyOrFn, builderFnOrOpts, opts)
     --  Header — menjorok INDENT px dari kiri body induk, ujung kanan sejajar
     local hdr = Instance.new("TextButton")
     hdr.Name             = "AccordionHeader"
-    hdr.Size             = UDim2.new(1, -(INDENT + MARGIN_R), 0, 26)
+    hdr.Size             = UDim2.new(1, -(INDENT + MARGIN_R), 0, 28)
     hdr.Position         = UDim2.new(0, INDENT, 0, yOff)
     hdr.BackgroundColor3 = theme.accordionBg
     hdr.BorderSizePixel  = 0
@@ -1865,7 +1865,7 @@ function Section:Accordion(title, stateKeyOrFn, builderFnOrOpts, opts)
     --  Nested accordion di dalamnya akan indent +INDENT relatif dari sini
     local body = Instance.new("Frame")
     body.Size                 = UDim2.new(1, 0, 0, 0)
-    body.Position             = UDim2.new(0, 0, 0, yOff + 30)
+    body.Position             = UDim2.new(0, 0, 0, yOff + 32)
     body.BackgroundTransparency = 1
     body.BorderSizePixel      = 0
     body.ClipsDescendants     = true
@@ -1881,7 +1881,7 @@ function Section:Accordion(title, stateKeyOrFn, builderFnOrOpts, opts)
         innerH[1] = innerH[1] + delta
         body.Size = UDim2.new(1, 0, 0, body.Size.Y.Offset + delta)
         if open[1] then
-            local threshold = hdr.Position.Y.Offset + 26
+            local threshold = hdr.Position.Y.Offset + 28
             for _, child in ipairs(parent:GetChildren()) do
                 if child ~= hdr and child ~= body then
                     if child.Position.Y.Offset > threshold then
@@ -1916,7 +1916,7 @@ function Section:Accordion(title, stateKeyOrFn, builderFnOrOpts, opts)
         body.Visible = open[1]
         hdr.Text = "  " .. title .. (open[1] and ARROW_OPEN or ARROW_CLOSED)
         local shift = open[1] and innerH[1] or -innerH[1]
-        local threshold = hdr.Position.Y.Offset + 26
+        local threshold = hdr.Position.Y.Offset + 28
         for _, child in ipairs(parent:GetChildren()) do
             if child ~= hdr and child ~= body then
                 if child.Position.Y.Offset > threshold then
@@ -2015,7 +2015,7 @@ function Section:Accordion(title, stateKeyOrFn, builderFnOrOpts, opts)
         overlayContainer(body)
     end
 
-    local addedH = 30 + (open[1] and innerH[1] or 0)
+    local addedH = 32 + (open[1] and innerH[1] or 0)
     self._y = yOff + addedH + (opts.gap or 4)
     return inner
 end
