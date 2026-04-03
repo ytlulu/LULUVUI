@@ -11,6 +11,7 @@ LuluUI.__index = LuluUI
 -- ============================================================
 local TweenService     = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
+local RunService       = game:GetService("RunService")
 local Players          = game:GetService("Players")
 
 -- ============================================================
@@ -584,9 +585,16 @@ local function _mkDropdown(parent, mainFrame, label, options, default, yOff, cal
     scroll.ZIndex                 = 201
     scroll.Parent                 = dropMenu
 
+    local trackConn = nil  -- RenderStepped connection untuk tracking posisi
+
     --  closeMenu 
     local function closeMenu()
         if open[1] then
+            -- Stop position tracking
+            if trackConn then
+                trackConn:Disconnect()
+                trackConn = nil
+            end
             dropMenu.Visible = false
             dropMenu.Parent  = nil
             open[1]          = false
@@ -646,6 +654,23 @@ local function _mkDropdown(parent, mainFrame, label, options, default, yOff, cal
         open[1]            = true
         local cur = valBtn.Text:gsub("%s*%+$", ""):gsub("%s*%-$", "")
         valBtn.Text = cur .. " -"
+
+        -- Track posisi setiap frame agar dropdown selalu ngikut saat di-scroll
+        trackConn = RunService.RenderStepped:Connect(function()
+            if not open[1] then
+                trackConn:Disconnect()
+                trackConn = nil
+                return
+            end
+            local ap  = valBtn.AbsolutePosition
+            local fp  = mainFrame.AbsolutePosition
+            local mW  = valBtn.AbsoluteSize.X
+            dropMenu.Size     = UDim2.new(0, mW, 0, menuH)
+            dropMenu.Position = UDim2.new(
+                0, ap.X - fp.X,
+                0, ap.Y - fp.Y + valBtn.AbsoluteSize.Y + 4
+            )
+        end)
     end
 
     valBtn.MouseButton1Click:Connect(function()
@@ -862,7 +887,14 @@ local function _mkMultiDropdown(parent, mainFrame, label, options, defaults, yOf
     end
 
     -- Open / close menu
+    local trackConnM = nil  -- RenderStepped connection untuk tracking posisi
+
     local function closeMenu()
+        -- Stop position tracking
+        if trackConnM then
+            trackConnM:Disconnect()
+            trackConnM = nil
+        end
         dropMenu.Visible = false
         dropMenu.Parent = nil
         open[1] = false
@@ -879,6 +911,23 @@ local function _mkMultiDropdown(parent, mainFrame, label, options, defaults, yOf
                 absPos.Y - framePos.Y + valBtn.AbsoluteSize.Y + 4)
             dropMenu.Parent = mainFrame
             dropMenu.Visible = true
+
+            -- Track posisi setiap frame agar dropdown selalu ngikut saat di-scroll
+            trackConnM = RunService.RenderStepped:Connect(function()
+                if not open[1] then
+                    trackConnM:Disconnect()
+                    trackConnM = nil
+                    return
+                end
+                local ap  = valBtn.AbsolutePosition
+                local fp  = mainFrame.AbsolutePosition
+                local mW  = math.max(valBtn.AbsoluteSize.X, 150)
+                dropMenu.Size     = UDim2.new(0, mW, 0, menuH)
+                dropMenu.Position = UDim2.new(
+                    0, ap.X - fp.X,
+                    0, ap.Y - fp.Y + valBtn.AbsoluteSize.Y + 4
+                )
+            end)
         else
             closeMenu()
         end
