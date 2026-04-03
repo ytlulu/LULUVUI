@@ -3149,7 +3149,7 @@ function Window:InfoPanel(cfg)
     local PAD_BOT = 6
     local panelW  = cfg.width     or 180
     local minH    = PAD_TOP + PERF_H + PAD_BOT + 4
-    local maxH    = cfg.maxHeight or 320
+    local maxH    = cfg.maxHeight or 200
 
     -- ── Outer frame ──────────────────────────────────────────
     local panel = Instance.new("Frame")
