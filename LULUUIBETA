@@ -715,7 +715,7 @@ local function _mkDropdown(parent, mainFrame, label, options, default, yOff, cal
 end
 
 -- Multi-select Dropdown
-local function _mkMultiDropdown(parent, mainFrame, label, options, defaults, yOff, callback, theme, depth)
+local function _mkMultiDropdown(parent, mainFrame, label, options, defaults, yOff, callback, theme, closers, depth)
     depth = depth or 0
     local ML     = 8 + depth * 10
     local MR     = 8
@@ -899,6 +899,27 @@ local function _mkMultiDropdown(parent, mainFrame, label, options, defaults, yOf
         dropMenu.Parent = nil
         open[1] = false
     end
+
+    -- Daftarkan ke closers supaya otomatis tutup saat pindah tab
+    if closers then table.insert(closers, closeMenu) end
+
+    -- Tutup saat klik di luar dropMenu & valBtn
+    UserInputService.InputBegan:Connect(function(input)
+        if not open[1] then return end
+        if input.UserInputType ~= Enum.UserInputType.MouseButton1
+        and input.UserInputType ~= Enum.UserInputType.Touch then return end
+        local pos = input.Position
+        local function isInside(gui)
+            if not gui or not gui.Visible then return false end
+            local ap = gui.AbsolutePosition
+            local as = gui.AbsoluteSize
+            return pos.X >= ap.X and pos.X <= ap.X + as.X
+               and pos.Y >= ap.Y and pos.Y <= ap.Y + as.Y
+        end
+        if not isInside(dropMenu) and not isInside(valBtn) then
+            closeMenu()
+        end
+    end)
 
     valBtn.MouseButton1Click:Connect(function()
         open[1] = not open[1]
@@ -1840,7 +1861,7 @@ end
 -- callback(selectedTable) dipanggil tiap pilihan berubah
 function Section:MultiDropdown(label, options, defaults, callback, opts)
     opts = opts or {}
-    _mkMultiDropdown(self._c, self._mf, label, options, defaults, self._y, callback, self._t, self._depth)
+    _mkMultiDropdown(self._c, self._mf, label, options, defaults, self._y, callback, self._t, self._cl, self._depth)
     self._y = self._y + 28 + (opts.gap or DEFAULT_GAP)
 end
 
