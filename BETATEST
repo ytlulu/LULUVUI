@@ -3260,7 +3260,7 @@ function Window:InfoPanel(cfg)
     scroll.BorderSizePixel        = 0
     scroll.ScrollBarThickness     = 3
     scroll.ScrollBarImageColor3   = Color3.fromRGB(80, 120, 200)
-    scroll.AutomaticCanvasSize    = Enum.AutomaticCanvasSize.Y
+    scroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
     scroll.CanvasSize             = UDim2.new(0, 0, 0, 0)
     scroll.Parent                 = panel
 
