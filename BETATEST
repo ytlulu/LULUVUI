@@ -272,11 +272,12 @@ end
 -- ============================================================
 
 -- Label teks biasa
-local function _mkLabel(parent, text, yOff, h, size, bold, color, theme, depth)
+local function _mkLabel(parent, text, yOff, h, size, bold, color, theme, depth, opts)
     depth = depth or 0
+    opts  = opts  or {}
     local ML     = 8 + depth * 10
     local MR     = 8
-    local prefix = depth > 0 and "└ " or ""
+    local prefix = (depth > 0 and not opts.noPrefix) and "└ " or ""
     local l = Instance.new("TextLabel")
     l.Size = UDim2.new(1, -(ML + MR), 0, h or 20)
     l.Position = UDim2.new(0, ML, 0, yOff)
@@ -301,7 +302,7 @@ local function _mkInfoLabel(parent, label, initValue, yOff, theme, opts, depth)
     depth = depth or 0
     local ML     = 8 + depth * 10
     local MR     = 8
-    local prefix = depth > 0 and "└ " or ""
+    local prefix = (depth > 0 and not opts.noPrefix) and "└ " or ""
     local H      = opts.height or 28
 
     local bg = Instance.new("Frame")
@@ -1835,8 +1836,9 @@ local DEFAULT_GAP = 6
 function Section:Label(text, opts)
     opts = opts or {}
     local h = opts.height or 20
-    _mkLabel(self._c, text, self._y, h, opts.size, opts.bold, opts.color, self._t, self._depth)
+    local l = _mkLabel(self._c, text, self._y, h, opts.size, opts.bold, opts.color, self._t, self._depth, opts)
     self._y = self._y + h + (opts.gap or 4)
+    return l  -- return TextLabel supaya caller bisa update .Text dan .TextColor3
 end
 
 -- InfoLabel: label kiri + nilai kanan yang bisa di-update
@@ -3373,6 +3375,13 @@ function Window:InfoPanel(cfg)
                 l.Text = label .. ": " .. tostring(newVal)
                 if newColor then l.TextColor3 = newColor end
             end
+        end
+
+        function grp:Clear()
+            for _, l in ipairs(lines) do
+                if l and l.Parent then l:Destroy() end
+            end
+            lines = {}
         end
 
         function grp:Show()
