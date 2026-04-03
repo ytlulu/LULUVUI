@@ -291,6 +291,70 @@ local function _mkLabel(parent, text, yOff, h, size, bold, color, theme, depth)
     return l, h or 20
 end
 
+-- InfoLabel: label kiri statis + nilai kanan yang bisa di-update
+-- Contoh: local setter = sec:InfoLabel("Quest 1", "collect 0/5 sunflower")
+--         setter("collect 3/5 sunflower")  -- update nilai
+-- opts.color    → warna teks nilai (default: accent)
+-- opts.bold     → bold pada label kiri
+local function _mkInfoLabel(parent, label, initValue, yOff, theme, opts, depth)
+    opts  = opts  or {}
+    depth = depth or 0
+    local ML     = 8 + depth * 10
+    local MR     = 8
+    local prefix = depth > 0 and "└ " or ""
+    local H      = opts.height or 28
+
+    local bg = Instance.new("Frame")
+    bg.Size                   = UDim2.new(1, -(ML + MR), 0, H)
+    bg.Position               = UDim2.new(0, ML, 0, yOff)
+    bg.BackgroundColor3       = theme.contentBg
+    bg.BorderSizePixel        = 0
+    bg.Parent                 = parent
+    mkCorner(bg, 8)
+
+    -- Label kiri (statis)
+    local lbl = Instance.new("TextLabel")
+    lbl.Size                  = UDim2.new(0.55, -8, 1, 0)
+    lbl.Position              = UDim2.new(0, 10, 0, 0)
+    lbl.BackgroundTransparency = 1
+    lbl.Text                  = prefix .. label
+    lbl.Font                  = opts.bold and Enum.Font.GothamBold or Enum.Font.Gotham
+    lbl.TextSize               = opts.size or 10
+    lbl.TextColor3             = theme.text
+    lbl.TextXAlignment         = Enum.TextXAlignment.Left
+    lbl.TextTruncate           = Enum.TextTruncate.AtEnd
+    lbl.Parent                 = bg
+
+    -- Nilai kanan (dinamis, pakai badge kecil)
+    local valLbl = Instance.new("TextLabel")
+    valLbl.Size                   = UDim2.new(0.45, -10, 0, H - 8)
+    valLbl.Position               = UDim2.new(0.55, 0, 0.5, -(H - 8) / 2)
+    valLbl.BackgroundColor3       = opts.valueBg or theme.accordionBg
+    valLbl.BackgroundTransparency = 0
+    valLbl.BorderSizePixel        = 0
+    valLbl.Text                   = tostring(initValue or "")
+    valLbl.Font                   = Enum.Font.GothamBold
+    valLbl.TextSize                = opts.size or 10
+    valLbl.TextColor3              = opts.color or theme.accent
+    valLbl.TextXAlignment          = Enum.TextXAlignment.Center
+    valLbl.TextTruncate            = Enum.TextTruncate.AtEnd
+    valLbl.Parent                  = bg
+    mkCorner(valLbl, 5)
+
+    -- Setter kiri: update label
+    local function setLabel(newText)
+        lbl.Text = prefix .. tostring(newText)
+    end
+
+    -- Setter kanan: update nilai
+    local function setValue(newVal, newColor)
+        valLbl.Text = tostring(newVal)
+        if newColor then valLbl.TextColor3 = newColor end
+    end
+
+    return bg, H, setLabel, setValue
+end
+
 local function _mkDivider(parent, yOff, theme, depth)
     depth = depth or 0
     local ML = 8 + depth * 10
@@ -818,32 +882,55 @@ local function _mkMultiDropdown(parent, mainFrame, label, options, defaults, yOf
 
     local function refreshRow(opt, row, check)
         local on = selected[opt] == true
-        row.BackgroundColor3 = on and Color3.fromRGB(235, 245, 255) or theme.textWhite
-        check.Text = on and "" or ""
-        check.TextColor3 = theme.accent
+        -- Row background: transparan kalau tidak dipilih, sedikit biru kalau dipilih
+        row.BackgroundTransparency = on and 0 or 1
+        row.BackgroundColor3       = on and Color3.fromRGB(230, 242, 255) or theme.textWhite
+        -- Kotak checkbox: biru (accent) kalau dipilih, abu-abu kalau tidak
+        check.BackgroundColor3 = on and theme.accent or theme.contentBg
+        check.Text             = on and "" or ""
+        check.TextColor3       = on and theme.textWhite or theme.accordionTxt
     end
 
     for i, opt in ipairs(options) do
+        local isOn = selected[opt] == true
         local row = Instance.new("TextButton")
         row.Size = UDim2.new(1, 0, 0, itemH)
         row.Position = UDim2.new(0, 0, 0, (i - 1) * itemH)
-        row.BackgroundColor3 = selected[opt] and Color3.fromRGB(235, 245, 255) or theme.textWhite
+        row.BackgroundColor3      = isOn and Color3.fromRGB(230, 242, 255) or theme.textWhite
+        row.BackgroundTransparency = isOn and 0 or 1
         row.BorderSizePixel = 0
         row.Text = ""
         row.ZIndex = 202
         row.Parent = scroll
         mkCorner(row, 0)
 
+        -- Hover effect (hanya saat tidak dipilih)
+        row.MouseEnter:Connect(function()
+            if not selected[opt] then
+                TweenService:Create(row, TweenInfo.new(0.1), {
+                    BackgroundColor3 = Color3.fromRGB(245, 248, 255),
+                    BackgroundTransparency = 0
+                }):Play()
+            end
+        end)
+        row.MouseLeave:Connect(function()
+            if not selected[opt] then
+                TweenService:Create(row, TweenInfo.new(0.1), {
+                    BackgroundTransparency = 1
+                }):Play()
+            end
+        end)
+
         -- Checkmark box
         local check = Instance.new("TextLabel")
-        check.Size = UDim2.new(0, 20, 0, 20)
-        check.Position = UDim2.new(0, 6, 0.5, -10)
-        check.BackgroundColor3 = theme.contentBg
+        check.Size = UDim2.new(0, 18, 0, 18)
+        check.Position = UDim2.new(0, 7, 0.5, -9)
+        check.BackgroundColor3 = isOn and theme.accent or theme.contentBg
         check.BorderSizePixel = 0
-        check.Text = selected[opt] and "" or ""
+        check.Text             = isOn and "" or ""
         check.Font = Enum.Font.GothamBold
-        check.TextSize = 12
-        check.TextColor3 = theme.accent
+        check.TextSize = 11
+        check.TextColor3       = isOn and theme.textWhite or theme.accordionTxt
         check.TextXAlignment = Enum.TextXAlignment.Center
         check.ZIndex = 203
         check.Parent = row
@@ -1750,6 +1837,18 @@ function Section:Label(text, opts)
     local h = opts.height or 20
     _mkLabel(self._c, text, self._y, h, opts.size, opts.bold, opts.color, self._t, self._depth)
     self._y = self._y + h + (opts.gap or 4)
+end
+
+-- InfoLabel: label kiri + nilai kanan yang bisa di-update
+-- Contoh:
+--   local setter = sec:InfoLabel("Quest 1", "collect 0/5 sunflower")
+--   setter("collect 3/5 sunflower")   ← update nilai kapan saja
+-- opts: .color (warna nilai), .bold (bold label), .size, .gap, .valueBg
+function Section:InfoLabel(label, initValue, opts)
+    opts = opts or {}
+    local _, h, setLabel, setValue = _mkInfoLabel(self._c, label, initValue, self._y, self._t, opts, self._depth)
+    self._y = self._y + h + (opts.gap or DEFAULT_GAP)
+    return setLabel, setValue
 end
 
 function Section:Divider(opts)
@@ -3025,81 +3124,77 @@ end
 -- INFO PANEL (overlay kanan atas, optional)
 -- Perf row FPS/CPU/PING otomatis dibikin & di-update.
 -- User cukup panggil :Line(text) untuk baris data di bawahnya.
--- cfg: width(180), position, bg, visible
+-- cfg: width(180), maxBodyHeight(250), position, bg, visible
 -- ============================================================
 function Window:InfoPanel(cfg)
     cfg = cfg or {}
 
-    -- Tinggi panel: 34px perf row + 8px padding atas + 8px bawah
-    -- Akan auto-grow tiap :Line() dipanggil
-    local PERF_H    = 30   -- tinggi perf row
-    local PAD_TOP   = 6    -- padding atas sebelum perf row
-    local LINE_H    = 18   -- tinggi tiap info line
-    local PAD_BOT   = 6
+    local PERF_H       = 30
+    local PAD_TOP      = 6
+    local PAD_BOT      = 6
+    local LINE_H       = 16
+    local MAX_BODY_H   = cfg.maxBodyHeight or 250
+    local panelW       = cfg.width or 180
 
-    local initH = PAD_TOP + PERF_H + PAD_BOT
-    local panelW = cfg.width or 180
-
+    -- Panel frame
     local panel = Instance.new("Frame")
-    panel.Size = UDim2.new(0, panelW, 0, initH)
-    panel.Position = cfg.position or UDim2.new(1, -(panelW + 10), 0, 10)
-    panel.BackgroundColor3 = cfg.bg or Color3.fromRGB(15, 20, 35)
+    panel.Size                   = UDim2.new(0, panelW, 0, PAD_TOP + PERF_H + PAD_BOT)
+    panel.Position               = cfg.position or UDim2.new(1, -(panelW + 10), 0, 10)
+    panel.BackgroundColor3       = cfg.bg or Color3.fromRGB(15, 20, 35)
     panel.BackgroundTransparency = 0.2
-    panel.BorderSizePixel = 0
-    panel.Visible = cfg.visible ~= false
-    panel.Parent = self.screenGui
+    panel.BorderSizePixel        = 0
+    panel.Visible                = cfg.visible ~= false
+    panel.Parent                 = self.screenGui
     mkCorner(panel, 10)
     self:_setupDrag(panel, panel)
 
     --  Perf row background 
     local perfRow = Instance.new("Frame")
-    perfRow.Size = UDim2.new(1, -8, 0, PERF_H)
-    perfRow.Position = UDim2.new(0, 4, 0, PAD_TOP)
+    perfRow.Size            = UDim2.new(1, -8, 0, PERF_H)
+    perfRow.Position        = UDim2.new(0, 4, 0, PAD_TOP)
     perfRow.BackgroundColor3 = Color3.fromRGB(25, 32, 55)
     perfRow.BorderSizePixel = 0
-    perfRow.Parent = panel
+    perfRow.Parent          = panel
     mkCorner(perfRow, 6)
 
-    --  Helper: satu cell (header kecil + nilai) 
     local function mkPerfCell(xScale, label)
         local cell = Instance.new("Frame")
-        cell.Size = UDim2.new(1/3, 0, 1, 0)
-        cell.Position = UDim2.new(xScale, 0, 0, 0)
+        cell.Size                 = UDim2.new(1/3, 0, 1, 0)
+        cell.Position             = UDim2.new(xScale, 0, 0, 0)
         cell.BackgroundTransparency = 1
-        cell.Parent = perfRow
+        cell.Parent               = perfRow
 
         local hdr = Instance.new("TextLabel")
-        hdr.Size = UDim2.new(1, 0, 0, 11)
-        hdr.Position = UDim2.new(0, 0, 0, 2)
+        hdr.Size                  = UDim2.new(1, 0, 0, 11)
+        hdr.Position              = UDim2.new(0, 0, 0, 2)
         hdr.BackgroundTransparency = 1
-        hdr.Text = label
-        hdr.Font = Enum.Font.Gotham
-        hdr.TextSize = 8
-        hdr.TextColor3 = Color3.fromRGB(120, 140, 180)
-        hdr.TextXAlignment = Enum.TextXAlignment.Center
-        hdr.Parent = cell
+        hdr.Text                  = label
+        hdr.Font                  = Enum.Font.Gotham
+        hdr.TextSize              = 8
+        hdr.TextColor3            = Color3.fromRGB(120, 140, 180)
+        hdr.TextXAlignment        = Enum.TextXAlignment.Center
+        hdr.Parent                = cell
 
         local val = Instance.new("TextLabel")
-        val.Size = UDim2.new(1, 0, 0, 13)
-        val.Position = UDim2.new(0, 0, 0, 13)
+        val.Size                  = UDim2.new(1, 0, 0, 13)
+        val.Position              = UDim2.new(0, 0, 0, 13)
         val.BackgroundTransparency = 1
-        val.Text = "—"
-        val.Font = Enum.Font.GothamBold
-        val.TextSize = 11
-        val.TextColor3 = Color3.fromRGB(255, 255, 255)
-        val.TextXAlignment = Enum.TextXAlignment.Center
-        val.Parent = cell
+        val.Text                  = "—"
+        val.Font                  = Enum.Font.GothamBold
+        val.TextSize              = 11
+        val.TextColor3            = Color3.fromRGB(255, 255, 255)
+        val.TextXAlignment        = Enum.TextXAlignment.Center
+        val.Parent                = cell
         return val
     end
 
-    --  Divider vertikal antara cell 
     local function mkPerfDiv(xScale)
         local d = Instance.new("Frame")
-        d.Size = UDim2.new(0, 1, 0.65, 0)
-        d.Position = UDim2.new(xScale, 0, 0.175, 0)
+        d.Size            = UDim2.new(0, 1, 0.65, 0)
+        d.Position        = UDim2.new(xScale, 0, 0.175, 0)
         d.BackgroundColor3 = Color3.fromRGB(60, 75, 110)
         d.BorderSizePixel = 0
-        d.Parent = perfRow
+        d.Parent          = perfRow
     end
 
     local lbl_FPS  = mkPerfCell(0,   "FPS")
@@ -3116,11 +3211,8 @@ function Window:InfoPanel(cfg)
         _fpsCount = _fpsCount + 1
         _lastDt   = dt
     end)
-    -- Disconnect RenderStepped saat panel di-destroy (anti memory leak)
     panel.AncestryChanged:Connect(function()
-        if not panel.Parent then
-            _rsConn:Disconnect()
-        end
+        if not panel.Parent then _rsConn:Disconnect() end
     end)
     task.spawn(function()
         while panel and panel.Parent do
@@ -3138,31 +3230,122 @@ function Window:InfoPanel(cfg)
         end
     end)
 
-    --  API 
-    -- _y mulai setelah perf row + padding
-    local api = {frame = panel, _y = PAD_TOP + PERF_H + 4}
+    -- ── Scrollable body di bawah perf row ────────────────────────
+    local BODY_TOP   = PAD_TOP + PERF_H + 4
+    local scrollBody = Instance.new("ScrollingFrame")
+    scrollBody.Size                  = UDim2.new(1, -4, 0, 0)
+    scrollBody.Position              = UDim2.new(0, 2, 0, BODY_TOP)
+    scrollBody.BackgroundTransparency = 1
+    scrollBody.BorderSizePixel       = 0
+    scrollBody.ScrollBarThickness    = 3
+    scrollBody.ScrollBarImageColor3  = Color3.fromRGB(80, 130, 230)
+    scrollBody.CanvasSize            = UDim2.new(0, 0, 0, 0)
+    scrollBody.AutomaticCanvasSize   = Enum.AutomaticCanvasSize.Y
+    scrollBody.Parent                = panel
 
-    -- :Line(text) → bikin info line, return TextLabel (update .Text dari luar)
+    local _layout = Instance.new("UIListLayout", scrollBody)
+    _layout.Padding   = UDim.new(0, 2)
+    _layout.SortOrder = Enum.SortOrder.LayoutOrder
+    local _pad = Instance.new("UIPadding", scrollBody)
+    _pad.PaddingLeft  = UDim.new(0, 4)
+    _pad.PaddingRight = UDim.new(0, 4)
+    _pad.PaddingTop   = UDim.new(0, 2)
+
+    local _lineOrder = 0
+    local _contentH  = 0
+
+    local function _resize()
+        local bodyH = math.min(_contentH + 6, MAX_BODY_H)
+        scrollBody.Size = UDim2.new(1, -4, 0, bodyH)
+        panel.Size      = UDim2.new(0, panelW, 0, BODY_TOP + bodyH + PAD_BOT)
+    end
+
+    --  API 
+    local api = {frame = panel}
+
+    -- :Line(text) → info line biasa, return TextLabel
     function api:Line(text)
+        _lineOrder = _lineOrder + 1
         local l = Instance.new("TextLabel")
-        l.Size = UDim2.new(1, -10, 0, 16)
-        l.Position = UDim2.new(0, 6, 0, self._y)
+        l.Size                  = UDim2.new(1, 0, 0, LINE_H)
         l.BackgroundTransparency = 1
-        l.Text = text
-        l.Font = Enum.Font.GothamBold
-        l.TextSize = 10
-        l.TextColor3 = Color3.fromRGB(200, 220, 255)
-        l.TextXAlignment = Enum.TextXAlignment.Left
-        l.TextTruncate = Enum.TextTruncate.AtEnd
-        l.Parent = panel
-        self._y = self._y + LINE_H
-        -- Auto grow panel
-        panel.Size = UDim2.new(0, panelW, 0, self._y + PAD_BOT)
+        l.Text                  = text
+        l.Font                  = Enum.Font.GothamBold
+        l.TextSize              = 10
+        l.TextColor3            = Color3.fromRGB(200, 220, 255)
+        l.TextXAlignment        = Enum.TextXAlignment.Left
+        l.TextTruncate          = Enum.TextTruncate.AtEnd
+        l.LayoutOrder           = _lineOrder
+        l.Parent                = scrollBody
+        _contentH = _contentH + LINE_H + 2
+        _resize()
         return l
     end
 
-    function api:Show()   panel.Visible = true            end
-    function api:Hide()   panel.Visible = false           end
+    -- :Header(text) → separator judul kecil di dalam panel
+    function api:Header(text)
+        _lineOrder = _lineOrder + 1
+        local hdr = Instance.new("TextLabel")
+        hdr.Size                  = UDim2.new(1, 0, 0, 14)
+        hdr.BackgroundTransparency = 1
+        hdr.Text                  = "── " .. text .. " ──"
+        hdr.Font                  = Enum.Font.GothamBold
+        hdr.TextSize              = 9
+        hdr.TextColor3            = Color3.fromRGB(120, 160, 230)
+        hdr.TextXAlignment        = Enum.TextXAlignment.Center
+        hdr.LayoutOrder           = _lineOrder
+        hdr.Parent                = scrollBody
+        _contentH = _contentH + 16
+        _resize()
+        return hdr
+    end
+
+    -- :QuestLine(label, value) → row label kiri + nilai kanan
+    -- return: setValue(newVal, newColor?)
+    function api:QuestLine(label, initValue)
+        _lineOrder = _lineOrder + 1
+        local row = Instance.new("Frame")
+        row.Size                  = UDim2.new(1, 0, 0, LINE_H)
+        row.BackgroundTransparency = 1
+        row.BorderSizePixel       = 0
+        row.LayoutOrder           = _lineOrder
+        row.Parent                = scrollBody
+
+        local lbl = Instance.new("TextLabel")
+        lbl.Size                  = UDim2.new(0.55, 0, 1, 0)
+        lbl.Position              = UDim2.new(0, 0, 0, 0)
+        lbl.BackgroundTransparency = 1
+        lbl.Text                  = label
+        lbl.Font                  = Enum.Font.Gotham
+        lbl.TextSize              = 9
+        lbl.TextColor3            = Color3.fromRGB(170, 190, 230)
+        lbl.TextXAlignment        = Enum.TextXAlignment.Left
+        lbl.TextTruncate          = Enum.TextTruncate.AtEnd
+        lbl.Parent                = row
+
+        local val = Instance.new("TextLabel")
+        val.Size                  = UDim2.new(0.45, 0, 1, 0)
+        val.Position              = UDim2.new(0.55, 0, 0, 0)
+        val.BackgroundTransparency = 1
+        val.Text                  = tostring(initValue or "—")
+        val.Font                  = Enum.Font.GothamBold
+        val.TextSize              = 9
+        val.TextColor3            = Color3.fromRGB(100, 220, 140)
+        val.TextXAlignment        = Enum.TextXAlignment.Right
+        val.TextTruncate          = Enum.TextTruncate.AtEnd
+        val.Parent                = row
+
+        _contentH = _contentH + LINE_H + 2
+        _resize()
+
+        return function(newVal, newColor)
+            val.Text = tostring(newVal)
+            if newColor then val.TextColor3 = newColor end
+        end
+    end
+
+    function api:Show()   panel.Visible = true             end
+    function api:Hide()   panel.Visible = false            end
     function api:Toggle() panel.Visible = not panel.Visible end
 
     return api
