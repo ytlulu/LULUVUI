@@ -346,13 +346,18 @@ local function _mkInfoLabel(parent, label, initValue, yOff, theme, opts, depth)
         lbl.Text = prefix .. tostring(newText)
     end
 
-    -- Setter kanan: update nilai
+    -- Setter kanan: update nilai + warna opsional
     local function setValue(newVal, newColor)
         valLbl.Text = tostring(newVal)
         if newColor then valLbl.TextColor3 = newColor end
     end
 
-    return bg, H, setLabel, setValue
+    -- Setter visibility: sembunyikan/tampilkan seluruh baris
+    local function setVisible(v)
+        bg.Visible = v
+    end
+
+    return bg, H, setLabel, setValue, setVisible
 end
 
 local function _mkDivider(parent, yOff, theme, depth)
@@ -1846,9 +1851,9 @@ end
 -- opts: .color (warna nilai), .bold (bold label), .size, .gap, .valueBg
 function Section:InfoLabel(label, initValue, opts)
     opts = opts or {}
-    local _, h, setLabel, setValue = _mkInfoLabel(self._c, label, initValue, self._y, self._t, opts, self._depth)
+    local _, h, setLabel, setValue, setVisible = _mkInfoLabel(self._c, label, initValue, self._y, self._t, opts, self._depth)
     self._y = self._y + h + (opts.gap or DEFAULT_GAP)
-    return setLabel, setValue
+    return setLabel, setValue, setVisible
 end
 
 function Section:Divider(opts)
