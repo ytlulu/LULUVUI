@@ -2592,7 +2592,7 @@ function LuluUI.new(cfg)
         descText.Size                = UDim2.new(0, 220, 0, 25)
         descText.Position            = UDim2.new(0, -230, 0, 62)  -- offscreen kiri
         descText.BackgroundTransparency = 1
-        descText.Text                = "Beautiful UI v1.1"
+        descText.Text                = "BeautifulBETA UI v1.3"
         descText.Font                = Enum.Font.Gotham
         descText.TextSize            = 14
         descText.TextColor3          = Color3.fromRGB(220, 220, 220)
@@ -3160,85 +3160,87 @@ end
 -- Perf row FPS/CPU/PING otomatis dibikin & di-update.
 -- User cukup panggil :Line(text) untuk baris data di bawahnya.
 -- cfg: width(180), position, bg, visible
+--
+-- FIX v1.3.1:
+--   - Bug 1: panel tidak lagi terus tumbuh saat grp:Clear()+rebuild
+--             (pakai UIListLayout, items di-layout otomatis)
+--   - Bug 2: tidak ada ruang kosong saat hanya pakai perf row
+--             (panel hanya setinggi konten yang VISIBLE)
+--   - Bug 3: teks QuestLine nilai sekarang rata kiri, bukan kanan
 -- ============================================================
 function Window:InfoPanel(cfg)
     cfg = cfg or {}
 
-    -- Tinggi panel: 34px perf row + 8px padding atas + 8px bawah
-    -- Panel tingginya di-clamp ke MAX_H, konten di-scroll
-    local PERF_H    = 30   -- tinggi perf row
-    local PAD_TOP   = 6    -- padding atas sebelum perf row
-    local LINE_H    = 18   -- tinggi tiap info line
-    local PAD_BOT   = 6
-    local MAX_H     = cfg.maxHeight or 260  -- batas tinggi panel
+    local PERF_H  = 30
+    local PAD_TOP = 6
+    local LINE_H  = 18
+    local PAD_BOT = 6
+    local MAX_H   = cfg.maxHeight or 260
 
-    -- scrollTop = offset Y tempat scrollArea dimulai
     local scrollTop = PAD_TOP + PERF_H + 4
+    local initH     = PAD_TOP + PERF_H + PAD_BOT
+    local panelW    = cfg.width or 180
 
-    local initH = PAD_TOP + PERF_H + PAD_BOT
-    local panelW = cfg.width or 180
-
+    -- ── Panel utama ───────────────────────────────────────────
     local panel = Instance.new("Frame")
-    panel.Size = UDim2.new(0, panelW, 0, initH)
-    panel.Position = cfg.position or UDim2.new(1, -(panelW + 10), 0, 10)
-    panel.BackgroundColor3 = cfg.bg or Color3.fromRGB(15, 20, 35)
+    panel.Size                   = UDim2.new(0, panelW, 0, initH)
+    panel.Position               = cfg.position or UDim2.new(1, -(panelW + 10), 0, 10)
+    panel.BackgroundColor3       = cfg.bg or Color3.fromRGB(15, 20, 35)
     panel.BackgroundTransparency = 0.2
-    panel.BorderSizePixel = 0
-    panel.ClipsDescendants = true
-    panel.Visible = cfg.visible ~= false
-    panel.Parent = self.screenGui
+    panel.BorderSizePixel        = 0
+    panel.ClipsDescendants       = true
+    panel.Visible                = cfg.visible ~= false
+    panel.Parent                 = self.screenGui
     mkCorner(panel, 10)
     self:_setupDrag(panel, panel)
 
-    --  Perf row background 
+    -- ── Perf row ──────────────────────────────────────────────
     local perfRow = Instance.new("Frame")
-    perfRow.Size = UDim2.new(1, -8, 0, PERF_H)
-    perfRow.Position = UDim2.new(0, 4, 0, PAD_TOP)
+    perfRow.Size             = UDim2.new(1, -8, 0, PERF_H)
+    perfRow.Position         = UDim2.new(0, 4, 0, PAD_TOP)
     perfRow.BackgroundColor3 = Color3.fromRGB(25, 32, 55)
-    perfRow.BorderSizePixel = 0
-    perfRow.Parent = panel
+    perfRow.BorderSizePixel  = 0
+    perfRow.Parent           = panel
     mkCorner(perfRow, 6)
 
-    --  Helper: satu cell (header kecil + nilai) 
     local function mkPerfCell(xScale, label)
         local cell = Instance.new("Frame")
-        cell.Size = UDim2.new(1/3, 0, 1, 0)
-        cell.Position = UDim2.new(xScale, 0, 0, 0)
+        cell.Size                 = UDim2.new(1/3, 0, 1, 0)
+        cell.Position             = UDim2.new(xScale, 0, 0, 0)
         cell.BackgroundTransparency = 1
-        cell.Parent = perfRow
+        cell.Parent               = perfRow
 
         local hdr = Instance.new("TextLabel")
-        hdr.Size = UDim2.new(1, 0, 0, 11)
-        hdr.Position = UDim2.new(0, 0, 0, 2)
+        hdr.Size                  = UDim2.new(1, 0, 0, 11)
+        hdr.Position              = UDim2.new(0, 0, 0, 2)
         hdr.BackgroundTransparency = 1
-        hdr.Text = label
-        hdr.Font = Enum.Font.Gotham
-        hdr.TextSize = 8
-        hdr.TextColor3 = Color3.fromRGB(120, 140, 180)
-        hdr.TextXAlignment = Enum.TextXAlignment.Center
-        hdr.Parent = cell
+        hdr.Text                  = label
+        hdr.Font                  = Enum.Font.Gotham
+        hdr.TextSize              = 8
+        hdr.TextColor3            = Color3.fromRGB(120, 140, 180)
+        hdr.TextXAlignment        = Enum.TextXAlignment.Center
+        hdr.Parent                = cell
 
         local val = Instance.new("TextLabel")
-        val.Size = UDim2.new(1, 0, 0, 13)
-        val.Position = UDim2.new(0, 0, 0, 13)
+        val.Size                  = UDim2.new(1, 0, 0, 13)
+        val.Position              = UDim2.new(0, 0, 0, 13)
         val.BackgroundTransparency = 1
-        val.Text = "—"
-        val.Font = Enum.Font.GothamBold
-        val.TextSize = 11
-        val.TextColor3 = Color3.fromRGB(255, 255, 255)
-        val.TextXAlignment = Enum.TextXAlignment.Center
-        val.Parent = cell
+        val.Text                  = "—"
+        val.Font                  = Enum.Font.GothamBold
+        val.TextSize              = 11
+        val.TextColor3            = Color3.fromRGB(255, 255, 255)
+        val.TextXAlignment        = Enum.TextXAlignment.Center
+        val.Parent                = cell
         return val
     end
 
-    --  Divider vertikal antara cell 
     local function mkPerfDiv(xScale)
         local d = Instance.new("Frame")
-        d.Size = UDim2.new(0, 1, 0.65, 0)
-        d.Position = UDim2.new(xScale, 0, 0.175, 0)
+        d.Size             = UDim2.new(0, 1, 0.65, 0)
+        d.Position         = UDim2.new(xScale, 0, 0.175, 0)
         d.BackgroundColor3 = Color3.fromRGB(60, 75, 110)
-        d.BorderSizePixel = 0
-        d.Parent = perfRow
+        d.BorderSizePixel  = 0
+        d.Parent           = perfRow
     end
 
     local lbl_FPS  = mkPerfCell(0,   "FPS")
@@ -3247,28 +3249,24 @@ function Window:InfoPanel(cfg)
     mkPerfDiv(1/3)
     mkPerfDiv(2/3)
 
-    --  Auto-update loop (FPS via RenderStepped, Ping via API) 
+    -- Auto-update perf stats
     local _fpsCount = 0
     local _lastDt   = 0
-    local RunService = game:GetService("RunService")
     local _rsConn = RunService.RenderStepped:Connect(function(dt)
         _fpsCount = _fpsCount + 1
         _lastDt   = dt
     end)
-    -- Disconnect RenderStepped saat panel di-destroy (anti memory leak)
     panel.AncestryChanged:Connect(function()
-        if not panel.Parent then
-            _rsConn:Disconnect()
-        end
+        if not panel.Parent then _rsConn:Disconnect() end
     end)
     task.spawn(function()
         while panel and panel.Parent do
             task.wait(0.5)
             if panel.Visible then
                 lbl_FPS.Text  = tostring(_fpsCount * 2)
-                _fpsCount = 0
+                _fpsCount     = 0
                 lbl_CPU.Text  = tostring(math.floor(_lastDt * 1000)) .. "ms"
-                local pingMs = 0
+                local pingMs  = 0
                 pcall(function()
                     pingMs = math.floor(game:GetService("Players").LocalPlayer:GetNetworkPing() * 1000)
                 end)
@@ -3277,157 +3275,187 @@ function Window:InfoPanel(cfg)
         end
     end)
 
-    --  ScrollingFrame untuk konten info lines 
+    -- ── ScrollingFrame + UIListLayout ─────────────────────────
+    -- UIListLayout menangani posisi otomatis → tidak ada api._y
+    -- Saat item di-Hide (Visible=false + Size.Y=0), layout auto-shrink
+    -- Saat grp:Clear(), item dihapus → layout auto-update
     local scrollArea = Instance.new("ScrollingFrame")
-    scrollArea.Size                   = UDim2.new(1, 0, 1, -scrollTop)
-    scrollArea.Position               = UDim2.new(0, 0, 0, scrollTop)
+    scrollArea.Size                   = UDim2.new(1, -6, 1, -scrollTop)
+    scrollArea.Position               = UDim2.new(0, 3, 0, scrollTop)
     scrollArea.BackgroundTransparency = 1
     scrollArea.BorderSizePixel        = 0
     scrollArea.ScrollBarThickness     = 3
     scrollArea.ScrollBarImageColor3   = Color3.fromRGB(80, 120, 200)
-    scrollArea.AutomaticCanvasSize    = Enum.AutomaticSize.None   -- manual, biar tidak auto-grow liar
+    scrollArea.AutomaticCanvasSize    = Enum.AutomaticCanvasSize.Y
     scrollArea.CanvasSize             = UDim2.new(0, 0, 0, 0)
     scrollArea.ClipsDescendants       = true
     scrollArea.Parent                 = panel
 
-    --  Helper internal: resize panel & sync canvas
-    -- contentH = tinggi konten total di scrollArea (sudah include bottom pad)
-    local function _updatePanelH(contentH)
-        -- Panel tingginya dibatasi MAX_H
-        local panelH = math.min(scrollTop + contentH, MAX_H)
-        panel.Size = UDim2.new(0, panelW, 0, panelH)
-        -- CanvasSize ikut konten asli agar bisa di-scroll kalau melebihi MAX_H
-        scrollArea.CanvasSize = UDim2.new(0, 0, 0, contentH)
+    local listLayout = Instance.new("UIListLayout", scrollArea)
+    listLayout.Padding             = UDim.new(0, 2)
+    listLayout.SortOrder           = Enum.SortOrder.LayoutOrder
+    listLayout.FillDirection       = Enum.FillDirection.Vertical
+    listLayout.HorizontalAlignment = Enum.HorizontalAlignment.Left
+
+    local scrollPad = Instance.new("UIPadding", scrollArea)
+    scrollPad.PaddingTop    = UDim.new(0, 4)
+    scrollPad.PaddingBottom = UDim.new(0, 4)
+    scrollPad.PaddingLeft   = UDim.new(0, 4)
+    scrollPad.PaddingRight  = UDim.new(0, 4)
+
+    -- LayoutOrder counter (monoton naik, tidak perlu di-reset)
+    local _order = 0
+    local function nextOrder()
+        _order = _order + 1
+        return _order
     end
 
-    --  API 
-    -- _y = cursor posisi konten berikutnya di dalam scrollArea
-    local api = {frame = panel, _y = 4}
+    -- Update tinggi panel sesuai konten yang visible
+    -- Dipanggil otomatis saat AbsoluteContentSize berubah
+    local function _updatePanelH()
+        task.defer(function()
+            local contentH = listLayout.AbsoluteContentSize.Y
+            if contentH <= 2 then
+                -- Tidak ada konten visible → kembali ke initH (hanya perf row)
+                panel.Size = UDim2.new(0, panelW, 0, initH)
+            else
+                local totalH = scrollTop + contentH + 8
+                panel.Size = UDim2.new(0, panelW, 0, math.min(totalH, MAX_H))
+            end
+        end)
+    end
+    listLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(_updatePanelH)
 
-    -- :Line(text) → bikin info line, return TextLabel (update .Text dari luar)
+    -- ── API ───────────────────────────────────────────────────
+    local api = {frame = panel}
+
+    -- :Line(text) → baris info biasa, return TextLabel
     function api:Line(text)
         local l = Instance.new("TextLabel")
-        l.Size = UDim2.new(1, -10, 0, 16)
-        l.Position = UDim2.new(0, 6, 0, self._y)
+        l.Size                   = UDim2.new(1, 0, 0, LINE_H)
         l.BackgroundTransparency = 1
-        l.Text = text
-        l.Font = Enum.Font.GothamBold
-        l.TextSize = 10
-        l.TextColor3 = Color3.fromRGB(200, 220, 255)
-        l.TextXAlignment = Enum.TextXAlignment.Left
-        l.TextTruncate = Enum.TextTruncate.AtEnd
-        l.Parent = scrollArea
-        self._y = self._y + LINE_H
-        _updatePanelH(self._y + PAD_BOT)
+        l.Text                   = text
+        l.Font                   = Enum.Font.GothamBold
+        l.TextSize               = 10
+        l.TextColor3             = Color3.fromRGB(200, 220, 255)
+        l.TextXAlignment         = Enum.TextXAlignment.Left
+        l.TextTruncate           = Enum.TextTruncate.AtEnd
+        l.LayoutOrder            = nextOrder()
+        l.Parent                 = scrollArea
         return l
     end
 
-    -- :Group() → grup baris yang bisa di-Show/Hide sekaligus
-    -- api grup: :Header(text), :Line(text), :QuestLine(label, val), :Show(), :Hide(), :SetVisible(bool), :Clear()
+    -- :Group() → grup baris yang bisa di-Show/Hide/Clear sekaligus
+    -- Saat Hide: item di-collapse (Visible=false + Size.Y=0) → panel auto-shrink
+    -- Saat Clear: item di-destroy → panel auto-shrink tanpa _y ghost space
     function api:Group()
-        local grp = {}
-        local members = {}  -- semua Instance di grup ini
+        local grp    = {}
+        local members = {}   -- { inst=GuiObject, origH=number }
 
-        local function addMember(inst)
-            table.insert(members, inst)
+        local function addMember(inst, h)
+            table.insert(members, {inst = inst, origH = h})
         end
 
-        -- Header: teks tebal berwarna accent sebagai pemisah bagian
+        -- Header: teks accent tebal
         function grp:Header(text)
             local h = Instance.new("TextLabel")
-            h.Size = UDim2.new(1, -10, 0, 16)
-            h.Position = UDim2.new(0, 6, 0, api._y)
+            h.Size                   = UDim2.new(1, 0, 0, LINE_H)
             h.BackgroundTransparency = 1
-            h.Text = text
-            h.Font = Enum.Font.GothamBold
-            h.TextSize = 10
-            h.TextColor3 = Color3.fromRGB(80, 200, 255)
-            h.TextXAlignment = Enum.TextXAlignment.Left
-            h.Parent = scrollArea
-            addMember(h)
-            api._y = api._y + LINE_H
-            _updatePanelH(api._y + PAD_BOT)
+            h.Text                   = text
+            h.Font                   = Enum.Font.GothamBold
+            h.TextSize               = 10
+            h.TextColor3             = Color3.fromRGB(80, 200, 255)
+            h.TextXAlignment         = Enum.TextXAlignment.Left
+            h.LayoutOrder            = nextOrder()
+            h.Parent                 = scrollArea
+            addMember(h, LINE_H)
             return h
         end
 
         -- Line: teks biasa
         function grp:Line(text)
             local l = Instance.new("TextLabel")
-            l.Size = UDim2.new(1, -10, 0, 16)
-            l.Position = UDim2.new(0, 6, 0, api._y)
+            l.Size                   = UDim2.new(1, 0, 0, LINE_H)
             l.BackgroundTransparency = 1
-            l.Text = text
-            l.Font = Enum.Font.Gotham
-            l.TextSize = 10
-            l.TextColor3 = Color3.fromRGB(200, 220, 255)
-            l.TextXAlignment = Enum.TextXAlignment.Left
-            l.Parent = scrollArea
-            addMember(l)
-            api._y = api._y + LINE_H
-            _updatePanelH(api._y + PAD_BOT)
+            l.Text                   = text
+            l.Font                   = Enum.Font.Gotham
+            l.TextSize               = 10
+            l.TextColor3             = Color3.fromRGB(200, 220, 255)
+            l.TextXAlignment         = Enum.TextXAlignment.Left
+            l.LayoutOrder            = nextOrder()
+            l.Parent                 = scrollArea
+            addMember(l, LINE_H)
             return l
         end
 
-        -- QuestLine: label kiri + nilai kanan yang bisa di-update
+        -- QuestLine: label kiri + nilai kiri-sejajar (FIX Bug 3: was Right)
         -- return setter: function(newVal, newColor?)
         function grp:QuestLine(label, initVal)
             local row = Instance.new("Frame")
-            row.Size = UDim2.new(1, -10, 0, 16)
-            row.Position = UDim2.new(0, 6, 0, api._y)
+            row.Size                   = UDim2.new(1, 0, 0, LINE_H)
             row.BackgroundTransparency = 1
-            row.BorderSizePixel = 0
-            row.Parent = scrollArea
-            addMember(row)
+            row.BorderSizePixel        = 0
+            row.LayoutOrder            = nextOrder()
+            row.Parent                 = scrollArea
+            addMember(row, LINE_H)
 
             local lbl = Instance.new("TextLabel")
-            lbl.Size = UDim2.new(0.55, 0, 1, 0)
+            lbl.Size                   = UDim2.new(0.55, 0, 1, 0)
             lbl.BackgroundTransparency = 1
-            lbl.Text = tostring(label)
-            lbl.Font = Enum.Font.Gotham
-            lbl.TextSize = 9
-            lbl.TextColor3 = Color3.fromRGB(160, 180, 210)
-            lbl.TextXAlignment = Enum.TextXAlignment.Left
-            lbl.TextTruncate = Enum.TextTruncate.AtEnd
-            lbl.Parent = row
+            lbl.Text                   = tostring(label)
+            lbl.Font                   = Enum.Font.Gotham
+            lbl.TextSize               = 9
+            lbl.TextColor3             = Color3.fromRGB(160, 180, 210)
+            lbl.TextXAlignment         = Enum.TextXAlignment.Left
+            lbl.TextTruncate           = Enum.TextTruncate.AtEnd
+            lbl.Parent                 = row
 
             local val = Instance.new("TextLabel")
-            val.Size = UDim2.new(0.45, 0, 1, 0)
-            val.Position = UDim2.new(0.55, 0, 0, 0)
+            val.Size                   = UDim2.new(0.45, 0, 1, 0)
+            val.Position               = UDim2.new(0.55, 0, 0, 0)
             val.BackgroundTransparency = 1
-            val.Text = tostring(initVal or "—")
-            val.Font = Enum.Font.GothamBold
-            val.TextSize = 9
-            val.TextColor3 = Color3.fromRGB(80, 200, 255)
-            val.TextXAlignment = Enum.TextXAlignment.Right
-            val.TextTruncate = Enum.TextTruncate.AtEnd
-            val.Parent = row
+            val.Text                   = tostring(initVal or "—")
+            val.Font                   = Enum.Font.GothamBold
+            val.TextSize               = 9
+            val.TextColor3             = Color3.fromRGB(80, 200, 255)
+            val.TextXAlignment         = Enum.TextXAlignment.Left   -- FIX Bug 3
+            val.TextTruncate           = Enum.TextTruncate.AtEnd
+            val.Parent                 = row
 
-            api._y = api._y + LINE_H
-            _updatePanelH(api._y + PAD_BOT)
-
-            -- setter(newVal, newColor?)
             return function(newVal, newColor)
                 val.Text = tostring(newVal or "—")
                 if newColor then val.TextColor3 = newColor end
             end
         end
 
+        -- Show: restore Visible + ukuran asli
         function grp:Show()
-            for _, m in ipairs(members) do m.Visible = true end
+            for _, m in ipairs(members) do
+                m.inst.Visible = true
+                local s = m.inst.Size
+                m.inst.Size = UDim2.new(s.X.Scale, s.X.Offset, 0, m.origH)
+            end
         end
 
+        -- Hide: collapse item (FIX Bug 1+2)
+        -- Visible=false + Size.Y=0 → UIListLayout skip → panel auto-shrink
         function grp:Hide()
-            for _, m in ipairs(members) do m.Visible = false end
+            for _, m in ipairs(members) do
+                m.inst.Visible = false
+                local s = m.inst.Size
+                m.inst.Size = UDim2.new(s.X.Scale, s.X.Offset, 0, 0)
+            end
         end
 
         function grp:SetVisible(v)
-            for _, m in ipairs(members) do m.Visible = v end
+            if v then grp:Show() else grp:Hide() end
         end
 
-        -- Hapus semua member dari panel
+        -- Clear: hapus semua item (FIX Bug 1)
+        -- Destroy membuat layout auto-recalculate tanpa sisa _y
         function grp:Clear()
             for _, m in ipairs(members) do
-                pcall(function() m:Destroy() end)
+                pcall(function() m.inst:Destroy() end)
             end
             members = {}
         end
@@ -3435,8 +3463,8 @@ function Window:InfoPanel(cfg)
         return grp
     end
 
-    function api:Show()   panel.Visible = true            end
-    function api:Hide()   panel.Visible = false           end
+    function api:Show()   panel.Visible = true             end
+    function api:Hide()   panel.Visible = false            end
     function api:Toggle() panel.Visible = not panel.Visible end
 
     return api
