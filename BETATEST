@@ -2290,6 +2290,12 @@ function LuluUI.new(cfg)
     mainFrame.Visible = false
     mainFrame.Parent = sg
     mkCorner(mainFrame, 3)
+    -- Batas (border) mainFrame — pengganti efek rounded corner lama
+    local mainStroke = Instance.new("UIStroke", mainFrame)
+    mainStroke.Color           = theme.accent
+    mainStroke.Thickness        = 1.5
+    mainStroke.Transparency     = 0.4
+    mainStroke.ApplyStrokeMode  = Enum.ApplyStrokeMode.Border
     self.mainFrame = mainFrame
 
     --  Title Bar (header tunggal: title + subtitle + divider) 
@@ -2385,6 +2391,8 @@ function LuluUI.new(cfg)
     leftPanel.BackgroundTransparency = 0.2
     leftPanel.BorderSizePixel = 0
     leftPanel.Parent = mainFrame
+    -- Corner bawah-kiri supaya ngikut batas mainFrame
+    mkCorner(leftPanel, 3)
     self.leftPanel = leftPanel
 
     --  Content Panel 
@@ -2396,6 +2404,8 @@ function LuluUI.new(cfg)
     rightPanel.BorderSizePixel = 0
     rightPanel.ClipsDescendants = false
     rightPanel.Parent = mainFrame
+    -- Corner bawah-kanan supaya ngikut batas mainFrame
+    mkCorner(rightPanel, 3)
     self.rightPanel = rightPanel
 
     -- ScrollingFrame
