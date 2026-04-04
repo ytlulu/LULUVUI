@@ -1,5 +1,5 @@
 -- ============================================================
---   LuluUI Library v1.3
+--   LuluUI Library v1.3.1
 --   Usage: local LuluUI = loadstring(game:HttpGet("URL"))()
 -- ============================================================
 
@@ -44,6 +44,9 @@ LuluUI.Themes = {
         accordionTxt = rgb(100, 110, 140),
         segmentOff   = rgb(160, 165, 180),
         luluNotify        = rgb(30,  30,  40),
+        success = rgb(40, 180, 80),    -- hijau (sukses)
+        warning = rgb(255, 170, 50),   -- kuning/orange (peringatan)
+        danger  = rgb(200, 60, 60),    -- merah (error/gagal)
     },
 
     --  Ocean (Dark Blue) 
@@ -65,6 +68,9 @@ LuluUI.Themes = {
         accordionTxt = rgb(60,  100, 150),
         segmentOff   = rgb(120, 160, 195),
         luluNotify        = rgb(10,  30,  55),
+        success = rgb(40, 180, 80),    -- hijau (sukses)
+        warning = rgb(255, 170, 50),   -- kuning/orange (peringatan)
+        danger  = rgb(200, 60, 60),    -- merah (error/gagal)
     },
 
     --  Matrix (Green) 
@@ -86,6 +92,9 @@ LuluUI.Themes = {
         accordionTxt = rgb(40,  110, 60),
         segmentOff   = rgb(100, 170, 120),
         luluNotify        = rgb(10,  40,  20),
+        success = rgb(40, 180, 80),    -- hijau (sukses)
+        warning = rgb(255, 170, 50),   -- kuning/orange (peringatan)
+        danger  = rgb(200, 60, 60),    -- merah (error/gagal)
     },
 
     --  Crimson (Red) 
@@ -107,6 +116,9 @@ LuluUI.Themes = {
         accordionTxt = rgb(140, 60,  70),
         segmentOff   = rgb(195, 140, 145),
         luluNotify        = rgb(50,  10,  15),
+        success = rgb(40, 180, 80),    -- hijau (sukses)
+        warning = rgb(255, 170, 50),   -- kuning/orange (peringatan)
+        danger  = rgb(200, 60, 60),    -- merah (error/gagal)
     },
 
     --  Luxury (Gold) 
@@ -128,6 +140,9 @@ LuluUI.Themes = {
         accordionTxt = rgb(130, 100, 30),
         segmentOff   = rgb(185, 165, 100),
         luluNotify        = rgb(45,  30,  5),
+        success = rgb(40, 180, 80),    -- hijau (sukses)
+        warning = rgb(255, 170, 50),   -- kuning/orange (peringatan)
+        danger  = rgb(200, 60, 60),    -- merah (error/gagal)
     },
 
     --  Sakura (Pink) 
@@ -149,6 +164,9 @@ LuluUI.Themes = {
         accordionTxt = rgb(155, 70,  115),
         segmentOff   = rgb(205, 155, 185),
         luluNotify        = rgb(55,  15,  40),
+        success = rgb(40, 180, 80),    -- hijau (sukses)
+        warning = rgb(255, 170, 50),   -- kuning/orange (peringatan)
+        danger  = rgb(200, 60, 60),    -- merah (error/gagal)
     },
 
     --  White (Light Mode bersih) 
@@ -170,6 +188,9 @@ LuluUI.Themes = {
         accordionTxt = rgb(100, 108, 135),
         segmentOff   = rgb(155, 162, 180),
         luluNotify        = rgb(30,  32,  45),
+        success = rgb(40, 180, 80),    -- hijau (sukses)
+        warning = rgb(255, 170, 50),   -- kuning/orange (peringatan)
+        danger  = rgb(200, 60, 60),    -- merah (error/gagal)
     },
 
     --  Dark (Dark Mode gelap) 
@@ -191,6 +212,9 @@ LuluUI.Themes = {
         accordionTxt = rgb(130, 140, 170),
         segmentOff   = rgb(75,  83,  110),
         luluNotify        = rgb(18,  20,  30),
+        success = rgb(40, 180, 80),    -- hijau (sukses)
+        warning = rgb(255, 170, 50),   -- kuning/orange (peringatan)
+        danger  = rgb(200, 60, 60),    -- merah (error/gagal)
     },
 
     --  Tosca (Teal/Cyan) 
@@ -212,6 +236,9 @@ LuluUI.Themes = {
         accordionTxt = rgb(30,  115, 110),
         segmentOff   = rgb(100, 175, 170),
         luluNotify        = rgb(5,   40,  38),
+        success = rgb(40, 180, 80),    -- hijau (sukses)
+        warning = rgb(255, 170, 50),   -- kuning/orange (peringatan)
+        danger  = rgb(200, 60, 60),    -- merah (error/gagal)
     },
 }
 
@@ -276,7 +303,7 @@ local function _mkLabel(parent, text, yOff, h, size, bold, color, theme, depth)
     depth = depth or 0
     local ML     = 8 + depth * 10
     local MR     = 8
-    local prefix = depth > 0 and "└ " or ""
+    local prefix = depth > 0 and " " or ""
     local l = Instance.new("TextLabel")
     l.Size = UDim2.new(1, -(ML + MR), 0, h or 20)
     l.Position = UDim2.new(0, ML, 0, yOff)
@@ -301,7 +328,7 @@ local function _mkInfoLabel(parent, label, initValue, yOff, theme, opts, depth)
     depth = depth or 0
     local ML     = 8 + depth * 10
     local MR     = 8
-    local prefix = depth > 0 and "└ " or ""
+    local prefix = depth > 0 and " " or ""
     local H      = opts.height or 28
 
     local bg = Instance.new("Frame")
@@ -375,7 +402,7 @@ local function _mkBtn(parent, text, yOff, h, col, theme, opts, depth)
     depth = depth or 0
     local ML     = 8 + depth * 10
     local MR     = 8
-    local prefix = depth > 0 and "└ " or ""
+    local prefix = depth > 0 and " " or ""
     col = col or theme.accent
     local loadingText = opts.loading
 
@@ -473,7 +500,7 @@ local function _mkToggle(parent, label, yOff, default, callback, theme, opts, de
     depth = depth or 0
     local ML = 8 + depth * 10
     local MR = 8
-    local prefix = depth > 0 and "└ " or ""
+    local prefix = depth > 0 and " " or ""
     local subtext  = opts.subtext
     local disabled = opts.disabled == true
     local totalH   = subtext and 48 or 28
@@ -575,7 +602,7 @@ local function _mkDropdown(parent, mainFrame, label, options, default, yOff, cal
     depth = depth or 0
     local ML     = 8 + depth * 10
     local MR     = 8
-    local prefix = depth > 0 and "└ " or ""
+    local prefix = depth > 0 and " " or ""
     local open        = {false}
     local currentOpts = options
 
@@ -783,7 +810,7 @@ local function _mkMultiDropdown(parent, mainFrame, label, options, defaults, yOf
     depth = depth or 0
     local ML     = 8 + depth * 10
     local MR     = 8
-    local prefix = depth > 0 and "└ " or ""
+    local prefix = depth > 0 and " " or ""
     local open    = {false}
     local selected = {}  -- set: selected[opt] = true
 
@@ -1055,7 +1082,7 @@ local function _mkTextInput(parent, label, yOff, default, callback, theme, opts,
     depth = depth or 0
     local ML     = 8 + depth * 10
     local MR     = 8
-    local prefix = depth > 0 and "└ " or ""
+    local prefix = depth > 0 and " " or ""
     local totalH = 58
 
     local bg = Instance.new("Frame")
@@ -1377,7 +1404,7 @@ local function _mkNumberInput(parent, labelText, yOff, defaultVal, step, minVal,
     depth = depth or 0
     local ML     = 8 + depth * 10
     local MR     = 8
-    local prefix = depth > 0 and "└ " or ""
+    local prefix = depth > 0 and " " or ""
     local cur = {defaultVal}
 
     local bg = Instance.new("Frame")
@@ -2037,7 +2064,7 @@ function Section:Accordion(title, stateKeyOrFn, builderFnOrOpts, opts)
     local depth    = self._depth or 0
     local HDR_ML   = 8 + depth * 10
     local HDR_MR   = 8
-    local hdrPrefix = depth > 0 and "└ " or "  "
+    local hdrPrefix = depth > 0 and " " or "  "
 
     -- Arrow: ▼ = terbuka, ▲ = tertutup
     local ARROW_OPEN   = " ▼"
@@ -2169,7 +2196,7 @@ function Section:Accordion(title, stateKeyOrFn, builderFnOrOpts, opts)
             ov.Size                   = UDim2.new(1, 0, 1, 0)
             ov.Position               = UDim2.new(0, 0, 0, 0)
             ov.BackgroundColor3       = Color3.fromRGB(0, 0, 0)
-            ov.BackgroundTransparency = 0.03
+            ov.BackgroundTransparency = 0.50
             ov.BorderSizePixel        = 0
             ov.Text                   = ""
             ov.Active                 = true
@@ -2184,7 +2211,7 @@ function Section:Accordion(title, stateKeyOrFn, builderFnOrOpts, opts)
             ic.Size                   = UDim2.new(0, 40, 1, 0)
             ic.Position               = UDim2.new(1, -44, 0, 0)
             ic.BackgroundTransparency = 1
-            ic.Text                   = "🔒"
+            ic.Text                   ="🖤 Feature locked"
             ic.Font                   = Enum.Font.GothamBold
             ic.TextSize               = 13
             ic.TextColor3             = Color3.fromRGB(255, 255, 255)
@@ -2299,7 +2326,7 @@ function LuluUI.new(cfg)
     self.mainFrame = mainFrame
 
     --  Title Bar (header tunggal: title + subtitle + divider) 
-    local HDR_H = 54
+    local HDR_H = 45
     local titleBar = Instance.new("Frame")
     titleBar.Size = UDim2.new(1, 0, 0, HDR_H)
     titleBar.BackgroundColor3 = theme.sidebar
@@ -2348,7 +2375,7 @@ function LuluUI.new(cfg)
     subtitleLabel.Size = UDim2.new(1, -80, 0, 13)
     subtitleLabel.Position = UDim2.new(0, 42, 0, 26)
     subtitleLabel.BackgroundTransparency = 1
-    subtitleLabel.Text = cfg.subtitle or "LuluUI v1.3"
+    subtitleLabel.Text = cfg.subtitle or "LuluUI v1.3.1"
     subtitleLabel.TextColor3 = theme.textLight
     subtitleLabel.Font = Enum.Font.Gotham
     subtitleLabel.TextSize = 10
@@ -2592,7 +2619,7 @@ function LuluUI.new(cfg)
         descText.Size                = UDim2.new(0, 220, 0, 25)
         descText.Position            = UDim2.new(0, -230, 0, 62)  -- offscreen kiri
         descText.BackgroundTransparency = 1
-        descText.Text                = "Beautiful UI v1.1"
+        descText.Text                = "Beautiful UI v1.3.1Update Ui Visual]"
         descText.Font                = Enum.Font.Gotham
         descText.TextSize            = 14
         descText.TextColor3          = Color3.fromRGB(220, 220, 220)
