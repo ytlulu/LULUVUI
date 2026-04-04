@@ -3285,6 +3285,119 @@ function Window:InfoPanel(cfg)
         return l
     end
 
+    -- :Group() → grup baris yang bisa di-Show/Hide sekaligus
+    -- api grup: :Header(text), :Line(text), :QuestLine(label, val), :Show(), :Hide(), :SetVisible(bool), :Clear()
+    function api:Group()
+        local grp = {}
+        local members = {}  -- semua Instance di grup ini
+
+        local function addMember(inst)
+            table.insert(members, inst)
+        end
+
+        -- Header: teks tebal berwarna accent sebagai pemisah bagian
+        function grp:Header(text)
+            local h = Instance.new("TextLabel")
+            h.Size = UDim2.new(1, -10, 0, 16)
+            h.Position = UDim2.new(0, 6, 0, api._y)
+            h.BackgroundTransparency = 1
+            h.Text = text
+            h.Font = Enum.Font.GothamBold
+            h.TextSize = 10
+            h.TextColor3 = Color3.fromRGB(80, 200, 255)
+            h.TextXAlignment = Enum.TextXAlignment.Left
+            h.Parent = panel
+            addMember(h)
+            api._y = api._y + LINE_H
+            panel.Size = UDim2.new(0, panelW, 0, api._y + PAD_BOT)
+            return h
+        end
+
+        -- Line: teks biasa
+        function grp:Line(text)
+            local l = Instance.new("TextLabel")
+            l.Size = UDim2.new(1, -10, 0, 16)
+            l.Position = UDim2.new(0, 6, 0, api._y)
+            l.BackgroundTransparency = 1
+            l.Text = text
+            l.Font = Enum.Font.Gotham
+            l.TextSize = 10
+            l.TextColor3 = Color3.fromRGB(200, 220, 255)
+            l.TextXAlignment = Enum.TextXAlignment.Left
+            l.Parent = panel
+            addMember(l)
+            api._y = api._y + LINE_H
+            panel.Size = UDim2.new(0, panelW, 0, api._y + PAD_BOT)
+            return l
+        end
+
+        -- QuestLine: label kiri + nilai kanan yang bisa di-update
+        -- return setter: function(newVal, newColor?)
+        function grp:QuestLine(label, initVal)
+            local row = Instance.new("Frame")
+            row.Size = UDim2.new(1, -10, 0, 16)
+            row.Position = UDim2.new(0, 6, 0, api._y)
+            row.BackgroundTransparency = 1
+            row.BorderSizePixel = 0
+            row.Parent = panel
+            addMember(row)
+
+            local lbl = Instance.new("TextLabel")
+            lbl.Size = UDim2.new(0.55, 0, 1, 0)
+            lbl.BackgroundTransparency = 1
+            lbl.Text = tostring(label)
+            lbl.Font = Enum.Font.Gotham
+            lbl.TextSize = 9
+            lbl.TextColor3 = Color3.fromRGB(160, 180, 210)
+            lbl.TextXAlignment = Enum.TextXAlignment.Left
+            lbl.TextTruncate = Enum.TextTruncate.AtEnd
+            lbl.Parent = row
+
+            local val = Instance.new("TextLabel")
+            val.Size = UDim2.new(0.45, 0, 1, 0)
+            val.Position = UDim2.new(0.55, 0, 0, 0)
+            val.BackgroundTransparency = 1
+            val.Text = tostring(initVal or "—")
+            val.Font = Enum.Font.GothamBold
+            val.TextSize = 9
+            val.TextColor3 = Color3.fromRGB(80, 200, 255)
+            val.TextXAlignment = Enum.TextXAlignment.Right
+            val.TextTruncate = Enum.TextTruncate.AtEnd
+            val.Parent = row
+
+            api._y = api._y + LINE_H
+            panel.Size = UDim2.new(0, panelW, 0, api._y + PAD_BOT)
+
+            -- setter(newVal, newColor?)
+            return function(newVal, newColor)
+                val.Text = tostring(newVal or "—")
+                if newColor then val.TextColor3 = newColor end
+            end
+        end
+
+        function grp:Show()
+            for _, m in ipairs(members) do m.Visible = true end
+        end
+
+        function grp:Hide()
+            for _, m in ipairs(members) do m.Visible = false end
+        end
+
+        function grp:SetVisible(v)
+            for _, m in ipairs(members) do m.Visible = v end
+        end
+
+        -- Hapus semua member dari panel
+        function grp:Clear()
+            for _, m in ipairs(members) do
+                pcall(function() m:Destroy() end)
+            end
+            members = {}
+        end
+
+        return grp
+    end
+
     function api:Show()   panel.Visible = true            end
     function api:Hide()   panel.Visible = false           end
     function api:Toggle() panel.Visible = not panel.Visible end
