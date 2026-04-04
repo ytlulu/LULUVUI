@@ -887,7 +887,7 @@ local function _mkMultiDropdown(parent, mainFrame, label, options, defaults, yOf
         row.BackgroundColor3       = on and Color3.fromRGB(230, 242, 255) or theme.textWhite
         -- Kotak checkbox: biru (accent) kalau dipilih, abu-abu kalau tidak
         check.BackgroundColor3 = on and theme.accent or theme.contentBg
-        check.Text             = on and "✓" or ""
+        check.Text             = on and "" or ""
         check.TextColor3       = on and theme.textWhite or theme.accordionTxt
     end
 
@@ -927,7 +927,7 @@ local function _mkMultiDropdown(parent, mainFrame, label, options, defaults, yOf
         check.Position = UDim2.new(0, 7, 0.5, -9)
         check.BackgroundColor3 = isOn and theme.accent or theme.contentBg
         check.BorderSizePixel = 0
-        check.Text             = isOn and "✓" or ""
+        check.Text             = isOn and "" or ""
         check.Font = Enum.Font.GothamBold
         check.TextSize = 11
         check.TextColor3       = isOn and theme.textWhite or theme.accordionTxt
@@ -2289,44 +2289,43 @@ function LuluUI.new(cfg)
     mainFrame.Active = true
     mainFrame.Visible = false
     mainFrame.Parent = sg
-    mkCorner(mainFrame, 3)
+    mkCorner(mainFrame, 14)
     self.mainFrame = mainFrame
 
-    --  Title Bar (header tunggal: title + subtitle + divider) 
-    local HDR_H = 54
+    --  Title Bar 
     local titleBar = Instance.new("Frame")
-    titleBar.Size = UDim2.new(1, 0, 0, HDR_H)
+    titleBar.Size = UDim2.new(1, 0, 0, 36)
     titleBar.BackgroundColor3 = theme.sidebar
     titleBar.BackgroundTransparency = 0.2
     titleBar.BorderSizePixel = 0
     titleBar.ZIndex = 2
     titleBar.Parent = mainFrame
-    mkCorner(titleBar, 3)
+    mkCorner(titleBar, 14)
     self.titleBar = titleBar
 
     -- Fix rounded bottom corners titlebar
     local titleFix = Instance.new("Frame")
-    titleFix.Size = UDim2.new(1, 0, 0, 3)
-    titleFix.Position = UDim2.new(0, 0, 1, -3)
+    titleFix.Size = UDim2.new(1, 0, 0, 14)
+    titleFix.Position = UDim2.new(0, 0, 1, -14)
     titleFix.BackgroundColor3 = theme.sidebar
     titleFix.BackgroundTransparency = 0.2
     titleFix.BorderSizePixel = 0
     titleFix.ZIndex = 1
     titleFix.Parent = titleBar
 
-    -- Icon di titlebar (rata kiri, tengah vertikal bagian atas)
+    -- Icon di titlebar
     local titleIcon = Instance.new("ImageLabel")
-    titleIcon.Size = UDim2.new(0, 22, 0, 22)
-    titleIcon.Position = UDim2.new(0, 12, 0, 9)
+    titleIcon.Size = UDim2.new(0, 25, 0, 25)
+    titleIcon.Position = UDim2.new(0, 12, 0.5, -12)
     titleIcon.BackgroundTransparency = 1
     titleIcon.Image = cfg.icon or "rbxassetid://89098667773873"
     titleIcon.ZIndex = 3
     titleIcon.Parent = titleBar
 
-    -- Judul (baris atas)
+    -- Judul
     local titleLabel = Instance.new("TextLabel")
-    titleLabel.Size = UDim2.new(1, -80, 0, 18)
-    titleLabel.Position = UDim2.new(0, 42, 0, 7)
+    titleLabel.Size = UDim2.new(1, -80, 1, 0)
+    titleLabel.Position = UDim2.new(0, 44, 0, 0)
     titleLabel.BackgroundTransparency = 1
     titleLabel.Text = cfg.title or "LuluUI"
     titleLabel.TextColor3 = theme.textWhite
@@ -2337,34 +2336,10 @@ function LuluUI.new(cfg)
     titleLabel.Parent = titleBar
     self.titleLabel = titleLabel
 
-    -- Subtitle (baris bawah judul, lebih kecil)
-    local subtitleLabel = Instance.new("TextLabel")
-    subtitleLabel.Size = UDim2.new(1, -80, 0, 13)
-    subtitleLabel.Position = UDim2.new(0, 42, 0, 26)
-    subtitleLabel.BackgroundTransparency = 1
-    subtitleLabel.Text = cfg.subtitle or "LuluUI v1.3"
-    subtitleLabel.TextColor3 = theme.textLight
-    subtitleLabel.Font = Enum.Font.Gotham
-    subtitleLabel.TextSize = 10
-    subtitleLabel.TextXAlignment = Enum.TextXAlignment.Left
-    subtitleLabel.ZIndex = 3
-    subtitleLabel.Parent = titleBar
-    self.subtitleLabel = subtitleLabel
-
-    -- Garis pemisah di bawah header
-    local hdrDivider = Instance.new("Frame")
-    hdrDivider.Size = UDim2.new(1, 0, 0, 1)
-    hdrDivider.Position = UDim2.new(0, 0, 1, -1)
-    hdrDivider.BackgroundColor3 = theme.divider
-    hdrDivider.BackgroundTransparency = 0.4
-    hdrDivider.BorderSizePixel = 0
-    hdrDivider.ZIndex = 3
-    hdrDivider.Parent = titleBar
-
-    -- Close button (tengah vertikal di header)
+    -- Close button
     local closeBtn = Instance.new("TextButton")
     closeBtn.Size = UDim2.new(0, 28, 0, 28)
-    closeBtn.Position = UDim2.new(1, -34, 0, 13)
+    closeBtn.Position = UDim2.new(1, -34, 0, 4)
     closeBtn.Text = "×"
     closeBtn.Font = Enum.Font.GothamBold
     closeBtn.TextSize = 20
@@ -2379,8 +2354,8 @@ function LuluUI.new(cfg)
 
     --  Sidebar 
     local leftPanel = Instance.new("Frame")
-    leftPanel.Size = UDim2.new(0, 90, 1, -HDR_H)
-    leftPanel.Position = UDim2.new(0, 0, 0, HDR_H)
+    leftPanel.Size = UDim2.new(0, 90, 1, -36)
+    leftPanel.Position = UDim2.new(0, 0, 0, 36)
     leftPanel.BackgroundColor3 = theme.sidebarBg
     leftPanel.BackgroundTransparency = 0.2
     leftPanel.BorderSizePixel = 0
@@ -2389,8 +2364,8 @@ function LuluUI.new(cfg)
 
     --  Content Panel 
     local rightPanel = Instance.new("Frame")
-    rightPanel.Size = UDim2.new(1, -90, 1, -HDR_H)
-    rightPanel.Position = UDim2.new(0, 90, 0, HDR_H)
+    rightPanel.Size = UDim2.new(1, -90, 1, -36)
+    rightPanel.Position = UDim2.new(0, 90, 0, 36)
     rightPanel.BackgroundColor3 = theme.sidebarBg
     rightPanel.BackgroundTransparency = 0.2
     rightPanel.BorderSizePixel = 0
@@ -3283,119 +3258,6 @@ function Window:InfoPanel(cfg)
         -- Auto grow panel
         panel.Size = UDim2.new(0, panelW, 0, self._y + PAD_BOT)
         return l
-    end
-
-    -- :Group() → grup baris yang bisa di-Show/Hide sekaligus
-    -- api grup: :Header(text), :Line(text), :QuestLine(label, val), :Show(), :Hide(), :SetVisible(bool), :Clear()
-    function api:Group()
-        local grp = {}
-        local members = {}  -- semua Instance di grup ini
-
-        local function addMember(inst)
-            table.insert(members, inst)
-        end
-
-        -- Header: teks tebal berwarna accent sebagai pemisah bagian
-        function grp:Header(text)
-            local h = Instance.new("TextLabel")
-            h.Size = UDim2.new(1, -10, 0, 16)
-            h.Position = UDim2.new(0, 6, 0, api._y)
-            h.BackgroundTransparency = 1
-            h.Text = text
-            h.Font = Enum.Font.GothamBold
-            h.TextSize = 10
-            h.TextColor3 = Color3.fromRGB(80, 200, 255)
-            h.TextXAlignment = Enum.TextXAlignment.Left
-            h.Parent = panel
-            addMember(h)
-            api._y = api._y + LINE_H
-            panel.Size = UDim2.new(0, panelW, 0, api._y + PAD_BOT)
-            return h
-        end
-
-        -- Line: teks biasa
-        function grp:Line(text)
-            local l = Instance.new("TextLabel")
-            l.Size = UDim2.new(1, -10, 0, 16)
-            l.Position = UDim2.new(0, 6, 0, api._y)
-            l.BackgroundTransparency = 1
-            l.Text = text
-            l.Font = Enum.Font.Gotham
-            l.TextSize = 10
-            l.TextColor3 = Color3.fromRGB(200, 220, 255)
-            l.TextXAlignment = Enum.TextXAlignment.Left
-            l.Parent = panel
-            addMember(l)
-            api._y = api._y + LINE_H
-            panel.Size = UDim2.new(0, panelW, 0, api._y + PAD_BOT)
-            return l
-        end
-
-        -- QuestLine: label kiri + nilai kanan yang bisa di-update
-        -- return setter: function(newVal, newColor?)
-        function grp:QuestLine(label, initVal)
-            local row = Instance.new("Frame")
-            row.Size = UDim2.new(1, -10, 0, 16)
-            row.Position = UDim2.new(0, 6, 0, api._y)
-            row.BackgroundTransparency = 1
-            row.BorderSizePixel = 0
-            row.Parent = panel
-            addMember(row)
-
-            local lbl = Instance.new("TextLabel")
-            lbl.Size = UDim2.new(0.55, 0, 1, 0)
-            lbl.BackgroundTransparency = 1
-            lbl.Text = tostring(label)
-            lbl.Font = Enum.Font.Gotham
-            lbl.TextSize = 9
-            lbl.TextColor3 = Color3.fromRGB(160, 180, 210)
-            lbl.TextXAlignment = Enum.TextXAlignment.Left
-            lbl.TextTruncate = Enum.TextTruncate.AtEnd
-            lbl.Parent = row
-
-            local val = Instance.new("TextLabel")
-            val.Size = UDim2.new(0.45, 0, 1, 0)
-            val.Position = UDim2.new(0.55, 0, 0, 0)
-            val.BackgroundTransparency = 1
-            val.Text = tostring(initVal or "—")
-            val.Font = Enum.Font.GothamBold
-            val.TextSize = 9
-            val.TextColor3 = Color3.fromRGB(80, 200, 255)
-            val.TextXAlignment = Enum.TextXAlignment.Right
-            val.TextTruncate = Enum.TextTruncate.AtEnd
-            val.Parent = row
-
-            api._y = api._y + LINE_H
-            panel.Size = UDim2.new(0, panelW, 0, api._y + PAD_BOT)
-
-            -- setter(newVal, newColor?)
-            return function(newVal, newColor)
-                val.Text = tostring(newVal or "—")
-                if newColor then val.TextColor3 = newColor end
-            end
-        end
-
-        function grp:Show()
-            for _, m in ipairs(members) do m.Visible = true end
-        end
-
-        function grp:Hide()
-            for _, m in ipairs(members) do m.Visible = false end
-        end
-
-        function grp:SetVisible(v)
-            for _, m in ipairs(members) do m.Visible = v end
-        end
-
-        -- Hapus semua member dari panel
-        function grp:Clear()
-            for _, m in ipairs(members) do
-                pcall(function() m:Destroy() end)
-            end
-            members = {}
-        end
-
-        return grp
     end
 
     function api:Show()   panel.Visible = true            end
