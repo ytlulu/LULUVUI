@@ -2279,7 +2279,7 @@ function LuluUI.new(cfg)
 
     --  Main Frame 
     local W = cfg.width  or 310
-    local H = cfg.height or 270
+    local H = cfg.height or 288  -- +18px kompensasi header gabungan (54px vs 36px lama)
     local mainFrame = Instance.new("Frame")
     mainFrame.Size = UDim2.new(0, W, 0, H)
     mainFrame.Position = cfg.position or UDim2.new(0.5, -W / 2, 0.5, -H / 2)
@@ -2875,7 +2875,7 @@ function Window:_setupResize(handle, frame, cfg)
             local d = inp.Position - resSt
             frame.Size = UDim2.new(
                 0, math.clamp(initSz.X.Offset + d.X, cfg.minW or 260, cfg.maxW or 600),
-                0, math.clamp(initSz.Y.Offset + d.Y, cfg.minH or 220, cfg.maxH or 500)
+                0, math.clamp(initSz.Y.Offset + d.Y, cfg.minH or 238, cfg.maxH or 500) -- minH +18px (header 54px vs 36px)
             )
         end
     end)
