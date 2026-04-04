@@ -1,5 +1,5 @@
 -- ============================================================
---   LuluUI Library v1.3
+--   LuluUI Library v1.3.1
 --   Usage: local LuluUI = loadstring(game:HttpGet("URL"))()
 -- ============================================================
 
@@ -276,7 +276,7 @@ local function _mkLabel(parent, text, yOff, h, size, bold, color, theme, depth)
     depth = depth or 0
     local ML     = 8 + depth * 10
     local MR     = 8
-    local prefix = depth > 0 and "└ " or ""
+    local prefix = depth > 0 and " " or ""
     local l = Instance.new("TextLabel")
     l.Size = UDim2.new(1, -(ML + MR), 0, h or 20)
     l.Position = UDim2.new(0, ML, 0, yOff)
@@ -301,7 +301,7 @@ local function _mkInfoLabel(parent, label, initValue, yOff, theme, opts, depth)
     depth = depth or 0
     local ML     = 8 + depth * 10
     local MR     = 8
-    local prefix = depth > 0 and "└ " or ""
+    local prefix = depth > 0 and " " or ""
     local H      = opts.height or 28
 
     local bg = Instance.new("Frame")
@@ -375,7 +375,7 @@ local function _mkBtn(parent, text, yOff, h, col, theme, opts, depth)
     depth = depth or 0
     local ML     = 8 + depth * 10
     local MR     = 8
-    local prefix = depth > 0 and "└ " or ""
+    local prefix = depth > 0 and " " or ""
     col = col or theme.accent
     local loadingText = opts.loading
 
@@ -473,7 +473,7 @@ local function _mkToggle(parent, label, yOff, default, callback, theme, opts, de
     depth = depth or 0
     local ML = 8 + depth * 10
     local MR = 8
-    local prefix = depth > 0 and "└ " or ""
+    local prefix = depth > 0 and " " or ""
     local subtext  = opts.subtext
     local disabled = opts.disabled == true
     local totalH   = subtext and 48 or 28
@@ -575,7 +575,7 @@ local function _mkDropdown(parent, mainFrame, label, options, default, yOff, cal
     depth = depth or 0
     local ML     = 8 + depth * 10
     local MR     = 8
-    local prefix = depth > 0 and "└ " or ""
+    local prefix = depth > 0 and " " or ""
     local open        = {false}
     local currentOpts = options
 
@@ -783,7 +783,7 @@ local function _mkMultiDropdown(parent, mainFrame, label, options, defaults, yOf
     depth = depth or 0
     local ML     = 8 + depth * 10
     local MR     = 8
-    local prefix = depth > 0 and "└ " or ""
+    local prefix = depth > 0 and " " or ""
     local open    = {false}
     local selected = {}  -- set: selected[opt] = true
 
@@ -887,7 +887,7 @@ local function _mkMultiDropdown(parent, mainFrame, label, options, defaults, yOf
         row.BackgroundColor3       = on and Color3.fromRGB(230, 242, 255) or theme.textWhite
         -- Kotak checkbox: biru (accent) kalau dipilih, abu-abu kalau tidak
         check.BackgroundColor3 = on and theme.accent or theme.contentBg
-        check.Text             = on and "" or ""
+        check.Text             = on and "✓" or ""
         check.TextColor3       = on and theme.textWhite or theme.accordionTxt
     end
 
@@ -927,7 +927,7 @@ local function _mkMultiDropdown(parent, mainFrame, label, options, defaults, yOf
         check.Position = UDim2.new(0, 7, 0.5, -9)
         check.BackgroundColor3 = isOn and theme.accent or theme.contentBg
         check.BorderSizePixel = 0
-        check.Text             = isOn and "" or ""
+        check.Text             = isOn and "✓" or ""
         check.Font = Enum.Font.GothamBold
         check.TextSize = 11
         check.TextColor3       = isOn and theme.textWhite or theme.accordionTxt
@@ -1055,7 +1055,7 @@ local function _mkTextInput(parent, label, yOff, default, callback, theme, opts,
     depth = depth or 0
     local ML     = 8 + depth * 10
     local MR     = 8
-    local prefix = depth > 0 and "└ " or ""
+    local prefix = depth > 0 and " " or ""
     local totalH = 58
 
     local bg = Instance.new("Frame")
@@ -1377,7 +1377,7 @@ local function _mkNumberInput(parent, labelText, yOff, defaultVal, step, minVal,
     depth = depth or 0
     local ML     = 8 + depth * 10
     local MR     = 8
-    local prefix = depth > 0 and "└ " or ""
+    local prefix = depth > 0 and " " or ""
     local cur = {defaultVal}
 
     local bg = Instance.new("Frame")
@@ -2037,7 +2037,7 @@ function Section:Accordion(title, stateKeyOrFn, builderFnOrOpts, opts)
     local depth    = self._depth or 0
     local HDR_ML   = 8 + depth * 10
     local HDR_MR   = 8
-    local hdrPrefix = depth > 0 and "└ " or "  "
+    local hdrPrefix = depth > 0 and " " or "  "
 
     -- Arrow: ▼ = terbuka, ▲ = tertutup
     local ARROW_OPEN   = " ▼"
@@ -2169,7 +2169,7 @@ function Section:Accordion(title, stateKeyOrFn, builderFnOrOpts, opts)
             ov.Size                   = UDim2.new(1, 0, 1, 0)
             ov.Position               = UDim2.new(0, 0, 0, 0)
             ov.BackgroundColor3       = Color3.fromRGB(0, 0, 0)
-            ov.BackgroundTransparency = 0.03
+            ov.BackgroundTransparency = 0.50
             ov.BorderSizePixel        = 0
             ov.Text                   = ""
             ov.Active                 = true
@@ -2184,7 +2184,7 @@ function Section:Accordion(title, stateKeyOrFn, builderFnOrOpts, opts)
             ic.Size                   = UDim2.new(0, 40, 1, 0)
             ic.Position               = UDim2.new(1, -44, 0, 0)
             ic.BackgroundTransparency = 1
-            ic.Text                   = "🔒"
+            ic.Text                   ="🖤 Feature locked"
             ic.Font                   = Enum.Font.GothamBold
             ic.TextSize               = 13
             ic.TextColor3             = Color3.fromRGB(255, 255, 255)
@@ -2279,7 +2279,7 @@ function LuluUI.new(cfg)
 
     --  Main Frame 
     local W = cfg.width  or 310
-    local H = cfg.height or 270
+    local H = cfg.height or 288  -- +18px kompensasi header gabungan (54px vs 36px lama)
     local mainFrame = Instance.new("Frame")
     mainFrame.Size = UDim2.new(0, W, 0, H)
     mainFrame.Position = cfg.position or UDim2.new(0.5, -W / 2, 0.5, -H / 2)
@@ -2289,43 +2289,50 @@ function LuluUI.new(cfg)
     mainFrame.Active = true
     mainFrame.Visible = false
     mainFrame.Parent = sg
-    mkCorner(mainFrame, 14)
+    mkCorner(mainFrame, 3)
+    -- Batas (border) mainFrame — pengganti efek rounded corner lama
+    local mainStroke = Instance.new("UIStroke", mainFrame)
+    mainStroke.Color           = theme.accent
+    mainStroke.Thickness        = 1.5
+    mainStroke.Transparency     = 0.4
+    mainStroke.ApplyStrokeMode  = Enum.ApplyStrokeMode.Border
     self.mainFrame = mainFrame
 
-    --  Title Bar 
+    --  Title Bar (header tunggal: title + subtitle + divider) 
+    local HDR_H = 45
     local titleBar = Instance.new("Frame")
-    titleBar.Size = UDim2.new(1, 0, 0, 36)
+    titleBar.Size = UDim2.new(1, 0, 0, HDR_H)
     titleBar.BackgroundColor3 = theme.sidebar
     titleBar.BackgroundTransparency = 0.2
     titleBar.BorderSizePixel = 0
     titleBar.ZIndex = 2
     titleBar.Parent = mainFrame
-    mkCorner(titleBar, 14)
+    mkCorner(titleBar, 3)
     self.titleBar = titleBar
 
     -- Fix rounded bottom corners titlebar
     local titleFix = Instance.new("Frame")
-    titleFix.Size = UDim2.new(1, 0, 0, 14)
-    titleFix.Position = UDim2.new(0, 0, 1, -14)
+    titleFix.Size = UDim2.new(1, 0, 0, 3)
+    titleFix.Position = UDim2.new(0, 0, 1, -3)
     titleFix.BackgroundColor3 = theme.sidebar
     titleFix.BackgroundTransparency = 0.2
     titleFix.BorderSizePixel = 0
     titleFix.ZIndex = 1
     titleFix.Parent = titleBar
 
-    -- Icon di titlebar
+    -- Icon di titlebar (rata kiri, tengah vertikal bagian atas)
     local titleIcon = Instance.new("ImageLabel")
-    titleIcon.Size = UDim2.new(0, 25, 0, 25)
-    titleIcon.Position = UDim2.new(0, 12, 0.5, -12)
+    titleIcon.Size = UDim2.new(0, 22, 0, 22)
+    titleIcon.Position = UDim2.new(0, 12, 0, 9)
     titleIcon.BackgroundTransparency = 1
     titleIcon.Image = cfg.icon or "rbxassetid://89098667773873"
     titleIcon.ZIndex = 3
     titleIcon.Parent = titleBar
 
-    -- Judul
+    -- Judul (baris atas)
     local titleLabel = Instance.new("TextLabel")
-    titleLabel.Size = UDim2.new(1, -80, 1, 0)
-    titleLabel.Position = UDim2.new(0, 44, 0, 0)
+    titleLabel.Size = UDim2.new(1, -80, 0, 18)
+    titleLabel.Position = UDim2.new(0, 42, 0, 7)
     titleLabel.BackgroundTransparency = 1
     titleLabel.Text = cfg.title or "LuluUI"
     titleLabel.TextColor3 = theme.textWhite
@@ -2336,10 +2343,34 @@ function LuluUI.new(cfg)
     titleLabel.Parent = titleBar
     self.titleLabel = titleLabel
 
-    -- Close button
+    -- Subtitle (baris bawah judul, lebih kecil)
+    local subtitleLabel = Instance.new("TextLabel")
+    subtitleLabel.Size = UDim2.new(1, -80, 0, 13)
+    subtitleLabel.Position = UDim2.new(0, 42, 0, 26)
+    subtitleLabel.BackgroundTransparency = 1
+    subtitleLabel.Text = cfg.subtitle or "LuluUI v1.3.1"
+    subtitleLabel.TextColor3 = theme.textLight
+    subtitleLabel.Font = Enum.Font.Gotham
+    subtitleLabel.TextSize = 10
+    subtitleLabel.TextXAlignment = Enum.TextXAlignment.Left
+    subtitleLabel.ZIndex = 3
+    subtitleLabel.Parent = titleBar
+    self.subtitleLabel = subtitleLabel
+
+    -- Garis pemisah di bawah header
+    local hdrDivider = Instance.new("Frame")
+    hdrDivider.Size = UDim2.new(1, 0, 0, 1)
+    hdrDivider.Position = UDim2.new(0, 0, 1, -1)
+    hdrDivider.BackgroundColor3 = theme.divider
+    hdrDivider.BackgroundTransparency = 0.4
+    hdrDivider.BorderSizePixel = 0
+    hdrDivider.ZIndex = 3
+    hdrDivider.Parent = titleBar
+
+    -- Close button (tengah vertikal di header)
     local closeBtn = Instance.new("TextButton")
     closeBtn.Size = UDim2.new(0, 28, 0, 28)
-    closeBtn.Position = UDim2.new(1, -34, 0, 4)
+    closeBtn.Position = UDim2.new(1, -34, 0, 13)
     closeBtn.Text = "×"
     closeBtn.Font = Enum.Font.GothamBold
     closeBtn.TextSize = 20
@@ -2354,23 +2385,27 @@ function LuluUI.new(cfg)
 
     --  Sidebar 
     local leftPanel = Instance.new("Frame")
-    leftPanel.Size = UDim2.new(0, 90, 1, -36)
-    leftPanel.Position = UDim2.new(0, 0, 0, 36)
+    leftPanel.Size = UDim2.new(0, 90, 1, -HDR_H)
+    leftPanel.Position = UDim2.new(0, 0, 0, HDR_H)
     leftPanel.BackgroundColor3 = theme.sidebarBg
     leftPanel.BackgroundTransparency = 0.2
     leftPanel.BorderSizePixel = 0
     leftPanel.Parent = mainFrame
+    -- Corner bawah-kiri supaya ngikut batas mainFrame
+    mkCorner(leftPanel, 3)
     self.leftPanel = leftPanel
 
     --  Content Panel 
     local rightPanel = Instance.new("Frame")
-    rightPanel.Size = UDim2.new(1, -90, 1, -36)
-    rightPanel.Position = UDim2.new(0, 90, 0, 36)
+    rightPanel.Size = UDim2.new(1, -90, 1, -HDR_H)
+    rightPanel.Position = UDim2.new(0, 90, 0, HDR_H)
     rightPanel.BackgroundColor3 = theme.sidebarBg
     rightPanel.BackgroundTransparency = 0.2
     rightPanel.BorderSizePixel = 0
     rightPanel.ClipsDescendants = false
     rightPanel.Parent = mainFrame
+    -- Corner bawah-kanan supaya ngikut batas mainFrame
+    mkCorner(rightPanel, 3)
     self.rightPanel = rightPanel
 
     -- ScrollingFrame
@@ -2557,7 +2592,7 @@ function LuluUI.new(cfg)
         descText.Size                = UDim2.new(0, 220, 0, 25)
         descText.Position            = UDim2.new(0, -230, 0, 62)  -- offscreen kiri
         descText.BackgroundTransparency = 1
-        descText.Text                = "Beautiful UI v1.1"
+        descText.Text                = "Beautiful UI v1.3.1Update Ui Visual]"
         descText.Font                = Enum.Font.Gotham
         descText.TextSize            = 14
         descText.TextColor3          = Color3.fromRGB(220, 220, 220)
@@ -2850,7 +2885,7 @@ function Window:_setupResize(handle, frame, cfg)
             local d = inp.Position - resSt
             frame.Size = UDim2.new(
                 0, math.clamp(initSz.X.Offset + d.X, cfg.minW or 260, cfg.maxW or 600),
-                0, math.clamp(initSz.Y.Offset + d.Y, cfg.minH or 220, cfg.maxH or 500)
+                0, math.clamp(initSz.Y.Offset + d.Y, cfg.minH or 238, cfg.maxH or 500) -- minH +18px (header 54px vs 36px)
             )
         end
     end)
@@ -3125,80 +3160,87 @@ end
 -- Perf row FPS/CPU/PING otomatis dibikin & di-update.
 -- User cukup panggil :Line(text) untuk baris data di bawahnya.
 -- cfg: width(180), position, bg, visible
+--
+-- FIX v1.3.1:
+--   - Bug 1: panel tidak lagi terus tumbuh saat grp:Clear()+rebuild
+--             (pakai UIListLayout, items di-layout otomatis)
+--   - Bug 2: tidak ada ruang kosong saat hanya pakai perf row
+--             (panel hanya setinggi konten yang VISIBLE)
+--   - Bug 3: teks QuestLine nilai sekarang rata kiri, bukan kanan
 -- ============================================================
 function Window:InfoPanel(cfg)
     cfg = cfg or {}
 
-    -- Tinggi panel: 34px perf row + 8px padding atas + 8px bawah
-    -- Akan auto-grow tiap :Line() dipanggil
-    local PERF_H    = 30   -- tinggi perf row
-    local PAD_TOP   = 6    -- padding atas sebelum perf row
-    local LINE_H    = 18   -- tinggi tiap info line
-    local PAD_BOT   = 6
+    local PERF_H  = 30
+    local PAD_TOP = 6
+    local LINE_H  = 18
+    local PAD_BOT = 6
+    local MAX_H   = cfg.maxHeight or 260
 
-    local initH = PAD_TOP + PERF_H + PAD_BOT
-    local panelW = cfg.width or 180
+    local scrollTop = PAD_TOP + PERF_H + 4
+    local initH     = PAD_TOP + PERF_H + PAD_BOT
+    local panelW    = cfg.width or 180
 
+    -- ── Panel utama ───────────────────────────────────────────
     local panel = Instance.new("Frame")
-    panel.Size = UDim2.new(0, panelW, 0, initH)
-    panel.Position = cfg.position or UDim2.new(1, -(panelW + 10), 0, 10)
-    panel.BackgroundColor3 = cfg.bg or Color3.fromRGB(15, 20, 35)
+    panel.Size                   = UDim2.new(0, panelW, 0, initH)
+    panel.Position               = cfg.position or UDim2.new(1, -(panelW + 10), 0, 10)
+    panel.BackgroundColor3       = cfg.bg or Color3.fromRGB(15, 20, 35)
     panel.BackgroundTransparency = 0.2
-    panel.BorderSizePixel = 0
-    panel.Visible = cfg.visible ~= false
-    panel.Parent = self.screenGui
+    panel.BorderSizePixel        = 0
+    panel.ClipsDescendants       = true
+    panel.Visible                = cfg.visible ~= false
+    panel.Parent                 = self.screenGui
     mkCorner(panel, 10)
     self:_setupDrag(panel, panel)
 
-    --  Perf row background 
+    -- ── Perf row ──────────────────────────────────────────────
     local perfRow = Instance.new("Frame")
-    perfRow.Size = UDim2.new(1, -8, 0, PERF_H)
-    perfRow.Position = UDim2.new(0, 4, 0, PAD_TOP)
+    perfRow.Size             = UDim2.new(1, -8, 0, PERF_H)
+    perfRow.Position         = UDim2.new(0, 4, 0, PAD_TOP)
     perfRow.BackgroundColor3 = Color3.fromRGB(25, 32, 55)
-    perfRow.BorderSizePixel = 0
-    perfRow.Parent = panel
+    perfRow.BorderSizePixel  = 0
+    perfRow.Parent           = panel
     mkCorner(perfRow, 6)
 
-    --  Helper: satu cell (header kecil + nilai) 
     local function mkPerfCell(xScale, label)
         local cell = Instance.new("Frame")
-        cell.Size = UDim2.new(1/3, 0, 1, 0)
-        cell.Position = UDim2.new(xScale, 0, 0, 0)
+        cell.Size                 = UDim2.new(1/3, 0, 1, 0)
+        cell.Position             = UDim2.new(xScale, 0, 0, 0)
         cell.BackgroundTransparency = 1
-        cell.Parent = perfRow
+        cell.Parent               = perfRow
 
         local hdr = Instance.new("TextLabel")
-        hdr.Size = UDim2.new(1, 0, 0, 11)
-        hdr.Position = UDim2.new(0, 0, 0, 2)
+        hdr.Size                  = UDim2.new(1, 0, 0, 11)
+        hdr.Position              = UDim2.new(0, 0, 0, 2)
         hdr.BackgroundTransparency = 1
-        hdr.Text = label
-        hdr.Font = Enum.Font.Gotham
-        hdr.TextSize = 8
-        hdr.TextColor3 = Color3.fromRGB(120, 140, 180)
-        hdr.TextXAlignment = Enum.TextXAlignment.Center
-        hdr.Parent = cell
+        hdr.Text                  = label
+        hdr.Font                  = Enum.Font.Gotham
+        hdr.TextSize              = 8
+        hdr.TextColor3            = Color3.fromRGB(120, 140, 180)
+        hdr.TextXAlignment        = Enum.TextXAlignment.Center
+        hdr.Parent                = cell
 
         local val = Instance.new("TextLabel")
-        val.Size = UDim2.new(1, 0, 0, 13)
-        val.Position = UDim2.new(0, 0, 0, 13)
+        val.Size                  = UDim2.new(1, 0, 0, 13)
+        val.Position              = UDim2.new(0, 0, 0, 13)
         val.BackgroundTransparency = 1
-        val.Text = "—"
-        val.Font = Enum.Font.GothamBold
-        val.TextSize = 11
-        val.TextColor3 = Color3.fromRGB(255, 255, 255)
-        val.TextXAlignment = Enum.TextXAlignment.Center
-        val.Parent = cell
+        val.Text                  = "—"
+        val.Font                  = Enum.Font.GothamBold
+        val.TextSize              = 11
+        val.TextColor3            = Color3.fromRGB(255, 255, 255)
+        val.TextXAlignment        = Enum.TextXAlignment.Center
+        val.Parent                = cell
         return val
     end
 
-    --  Divider vertikal antara cell 
     local function mkPerfDiv(xScale)
         local d = Instance.new("Frame")
-        d.Size = UDim2.new(0, 1, 0.65, 0)
-        d.Position = UDim2.new(xScale, 0, 0.175, 0)
+        d.Size             = UDim2.new(0, 1, 0.65, 0)
+        d.Position         = UDim2.new(xScale, 0, 0.175, 0)
         d.BackgroundColor3 = Color3.fromRGB(60, 75, 110)
-        d.BorderSizePixel = 0
-        d.Parent = perfRow
+        d.BorderSizePixel  = 0
+        d.Parent           = perfRow
     end
 
     local lbl_FPS  = mkPerfCell(0,   "FPS")
@@ -3207,28 +3249,24 @@ function Window:InfoPanel(cfg)
     mkPerfDiv(1/3)
     mkPerfDiv(2/3)
 
-    --  Auto-update loop (FPS via RenderStepped, Ping via API) 
+    -- Auto-update perf stats
     local _fpsCount = 0
     local _lastDt   = 0
-    local RunService = game:GetService("RunService")
     local _rsConn = RunService.RenderStepped:Connect(function(dt)
         _fpsCount = _fpsCount + 1
         _lastDt   = dt
     end)
-    -- Disconnect RenderStepped saat panel di-destroy (anti memory leak)
     panel.AncestryChanged:Connect(function()
-        if not panel.Parent then
-            _rsConn:Disconnect()
-        end
+        if not panel.Parent then _rsConn:Disconnect() end
     end)
     task.spawn(function()
         while panel and panel.Parent do
             task.wait(0.5)
             if panel.Visible then
                 lbl_FPS.Text  = tostring(_fpsCount * 2)
-                _fpsCount = 0
+                _fpsCount     = 0
                 lbl_CPU.Text  = tostring(math.floor(_lastDt * 1000)) .. "ms"
-                local pingMs = 0
+                local pingMs  = 0
                 pcall(function()
                     pingMs = math.floor(game:GetService("Players").LocalPlayer:GetNetworkPing() * 1000)
                 end)
@@ -3237,31 +3275,196 @@ function Window:InfoPanel(cfg)
         end
     end)
 
-    --  API 
-    -- _y mulai setelah perf row + padding
-    local api = {frame = panel, _y = PAD_TOP + PERF_H + 4}
+    -- ── ScrollingFrame + UIListLayout ─────────────────────────
+    -- UIListLayout menangani posisi otomatis → tidak ada api._y
+    -- Saat item di-Hide (Visible=false + Size.Y=0), layout auto-shrink
+    -- Saat grp:Clear(), item dihapus → layout auto-update
+    local scrollArea = Instance.new("ScrollingFrame")
+    scrollArea.Size                   = UDim2.new(1, -6, 1, -scrollTop)
+    scrollArea.Position               = UDim2.new(0, 3, 0, scrollTop)
+    scrollArea.BackgroundTransparency = 1
+    scrollArea.BorderSizePixel        = 0
+    scrollArea.ScrollBarThickness     = 3
+    scrollArea.ScrollBarImageColor3   = Color3.fromRGB(80, 120, 200)
+    scrollArea.AutomaticCanvasSize = Enum.AutomaticSize.Y
+    scrollArea.CanvasSize             = UDim2.new(0, 0, 0, 0)
+    scrollArea.ClipsDescendants       = true
+    scrollArea.Parent                 = panel
 
-    -- :Line(text) → bikin info line, return TextLabel (update .Text dari luar)
+    local listLayout = Instance.new("UIListLayout", scrollArea)
+    listLayout.Padding             = UDim.new(0, 2)
+    listLayout.SortOrder           = Enum.SortOrder.LayoutOrder
+    listLayout.FillDirection       = Enum.FillDirection.Vertical
+    listLayout.HorizontalAlignment = Enum.HorizontalAlignment.Left
+
+    local scrollPad = Instance.new("UIPadding", scrollArea)
+    scrollPad.PaddingTop    = UDim.new(0, 4)
+    scrollPad.PaddingBottom = UDim.new(0, 4)
+    scrollPad.PaddingLeft   = UDim.new(0, 4)
+    scrollPad.PaddingRight  = UDim.new(0, 4)
+
+    -- LayoutOrder counter (monoton naik, tidak perlu di-reset)
+    local _order = 0
+    local function nextOrder()
+        _order = _order + 1
+        return _order
+    end
+
+    -- Update tinggi panel sesuai konten yang visible
+    -- Dipanggil otomatis saat AbsoluteContentSize berubah
+    local function _updatePanelH()
+        task.defer(function()
+            local contentH = listLayout.AbsoluteContentSize.Y
+            if contentH <= 2 then
+                -- Tidak ada konten visible → kembali ke initH (hanya perf row)
+                panel.Size = UDim2.new(0, panelW, 0, initH)
+            else
+                local totalH = scrollTop + contentH + 8
+                panel.Size = UDim2.new(0, panelW, 0, math.min(totalH, MAX_H))
+            end
+        end)
+    end
+    listLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(_updatePanelH)
+
+    -- ── API ───────────────────────────────────────────────────
+    local api = {frame = panel}
+
+    -- :Line(text) → baris info biasa, return TextLabel
     function api:Line(text)
         local l = Instance.new("TextLabel")
-        l.Size = UDim2.new(1, -10, 0, 16)
-        l.Position = UDim2.new(0, 6, 0, self._y)
+        l.Size                   = UDim2.new(1, 0, 0, LINE_H)
         l.BackgroundTransparency = 1
-        l.Text = text
-        l.Font = Enum.Font.GothamBold
-        l.TextSize = 10
-        l.TextColor3 = Color3.fromRGB(200, 220, 255)
-        l.TextXAlignment = Enum.TextXAlignment.Left
-        l.TextTruncate = Enum.TextTruncate.AtEnd
-        l.Parent = panel
-        self._y = self._y + LINE_H
-        -- Auto grow panel
-        panel.Size = UDim2.new(0, panelW, 0, self._y + PAD_BOT)
+        l.Text                   = text
+        l.Font                   = Enum.Font.GothamBold
+        l.TextSize               = 10
+        l.TextColor3             = Color3.fromRGB(200, 220, 255)
+        l.TextXAlignment         = Enum.TextXAlignment.Left
+        l.TextTruncate           = Enum.TextTruncate.AtEnd
+        l.LayoutOrder            = nextOrder()
+        l.Parent                 = scrollArea
         return l
     end
 
-    function api:Show()   panel.Visible = true            end
-    function api:Hide()   panel.Visible = false           end
+    -- :Group() → grup baris yang bisa di-Show/Hide/Clear sekaligus
+    -- Saat Hide: item di-collapse (Visible=false + Size.Y=0) → panel auto-shrink
+    -- Saat Clear: item di-destroy → panel auto-shrink tanpa _y ghost space
+    function api:Group()
+        local grp    = {}
+        local members = {}   -- { inst=GuiObject, origH=number }
+
+        local function addMember(inst, h)
+            table.insert(members, {inst = inst, origH = h})
+        end
+
+        -- Header: teks accent tebal
+        function grp:Header(text)
+            local h = Instance.new("TextLabel")
+            h.Size                   = UDim2.new(1, 0, 0, LINE_H)
+            h.BackgroundTransparency = 1
+            h.Text                   = text
+            h.Font                   = Enum.Font.GothamBold
+            h.TextSize               = 10
+            h.TextColor3             = Color3.fromRGB(80, 200, 255)
+            h.TextXAlignment        = Enum.TextXAlignment.Center
+            h.LayoutOrder            = nextOrder()
+            h.Parent                 = scrollArea
+            addMember(h, LINE_H)
+            return h
+        end
+
+        -- Line: teks biasa
+        function grp:Line(text)
+            local l = Instance.new("TextLabel")
+            l.Size                   = UDim2.new(1, 0, 0, LINE_H)
+            l.BackgroundTransparency = 1
+            l.Text                   = text
+            l.Font                   = Enum.Font.Gotham
+            l.TextSize               = 10
+            l.TextColor3             = Color3.fromRGB(200, 220, 255)
+            l.TextXAlignment         = Enum.TextXAlignment.Left
+            l.LayoutOrder            = nextOrder()
+            l.Parent                 = scrollArea
+            addMember(l, LINE_H)
+            return l
+        end
+
+        -- QuestLine: label kiri + nilai kiri-sejajar (FIX Bug 3: was Right)
+        -- return setter: function(newVal, newColor?)
+        function grp:QuestLine(label, initVal)
+            local row = Instance.new("Frame")
+            row.Size                   = UDim2.new(1, 0, 0, LINE_H)
+            row.BackgroundTransparency = 1
+            row.BorderSizePixel        = 0
+            row.LayoutOrder            = nextOrder()
+            row.Parent                 = scrollArea
+            addMember(row, LINE_H)
+
+            local lbl = Instance.new("TextLabel")
+            lbl.Size                   = UDim2.new(0.38, 0, 1, 0)
+            lbl.BackgroundTransparency = 1
+            lbl.Text                   = tostring(label)
+            lbl.Font                   = Enum.Font.Gotham
+            lbl.TextSize               = 9
+            lbl.TextColor3             = Color3.fromRGB(160, 180, 210)
+            lbl.TextXAlignment         = Enum.TextXAlignment.Left
+            lbl.TextTruncate           = Enum.TextTruncate.AtEnd
+            lbl.Parent                 = row
+
+            local val = Instance.new("TextLabel")
+            val.Size                   = UDim2.new(0.62, 0, 1, 0)
+            val.Position               = UDim2.new(0.38, 0, 0, 0)
+            val.BackgroundTransparency = 1
+            val.Text                   = tostring(initVal or "—")
+            val.Font                   = Enum.Font.GothamBold
+            val.TextSize               = 9
+            val.TextColor3             = Color3.fromRGB(80, 200, 255)
+            val.TextXAlignment         = Enum.TextXAlignment.Left   -- FIX Bug 3
+            val.TextTruncate           = Enum.TextTruncate.AtEnd
+            val.Parent                 = row
+
+            return function(newVal, newColor)
+                val.Text = tostring(newVal or "—")
+                if newColor then val.TextColor3 = newColor end
+            end
+        end
+
+        -- Show: restore Visible + ukuran asli
+        function grp:Show()
+            for _, m in ipairs(members) do
+                m.inst.Visible = true
+                local s = m.inst.Size
+                m.inst.Size = UDim2.new(s.X.Scale, s.X.Offset, 0, m.origH)
+            end
+        end
+
+        -- Hide: collapse item (FIX Bug 1+2)
+        -- Visible=false + Size.Y=0 → UIListLayout skip → panel auto-shrink
+        function grp:Hide()
+            for _, m in ipairs(members) do
+                m.inst.Visible = false
+                local s = m.inst.Size
+                m.inst.Size = UDim2.new(s.X.Scale, s.X.Offset, 0, 0)
+            end
+        end
+
+        function grp:SetVisible(v)
+            if v then grp:Show() else grp:Hide() end
+        end
+
+        -- Clear: hapus semua item (FIX Bug 1)
+        -- Destroy membuat layout auto-recalculate tanpa sisa _y
+        function grp:Clear()
+            for _, m in ipairs(members) do
+                pcall(function() m.inst:Destroy() end)
+            end
+            members = {}
+        end
+
+        return grp
+    end
+
+    function api:Show()   panel.Visible = true             end
+    function api:Hide()   panel.Visible = false            end
     function api:Toggle() panel.Visible = not panel.Visible end
 
     return api
