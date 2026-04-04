@@ -3285,18 +3285,23 @@ function Window:InfoPanel(cfg)
     scrollArea.BorderSizePixel        = 0
     scrollArea.ScrollBarThickness     = 3
     scrollArea.ScrollBarImageColor3   = Color3.fromRGB(80, 120, 200)
-    scrollArea.AutomaticCanvasSize = Enum.AutomaticSize.Y
+    scrollArea.AutomaticCanvasSize    = Enum.AutomaticSize.None   -- manual, biar tidak auto-grow liar
     scrollArea.CanvasSize             = UDim2.new(0, 0, 0, 0)
+    scrollArea.ClipsDescendants       = true
     scrollArea.Parent                 = panel
 
-    --  Helper internal: clamp & resize panel height 
-    local function _updatePanelH(contentY)
-        local total = math.min(scrollTop + contentY + PAD_BOT, MAX_H)
-        panel.Size = UDim2.new(0, panelW, 0, total)
+    --  Helper internal: resize panel & sync canvas
+    -- contentH = tinggi konten total di scrollArea (sudah include bottom pad)
+    local function _updatePanelH(contentH)
+        -- Panel tingginya dibatasi MAX_H
+        local panelH = math.min(scrollTop + contentH, MAX_H)
+        panel.Size = UDim2.new(0, panelW, 0, panelH)
+        -- CanvasSize ikut konten asli agar bisa di-scroll kalau melebihi MAX_H
+        scrollArea.CanvasSize = UDim2.new(0, 0, 0, contentH)
     end
 
     --  API 
-    -- _y = posisi Y relatif di dalam scrollArea (bukan panel)
+    -- _y = cursor posisi konten berikutnya di dalam scrollArea
     local api = {frame = panel, _y = 4}
 
     -- :Line(text) → bikin info line, return TextLabel (update .Text dari luar)
