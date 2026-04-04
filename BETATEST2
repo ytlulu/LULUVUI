@@ -3365,7 +3365,7 @@ function Window:InfoPanel(cfg)
             h.Font                   = Enum.Font.GothamBold
             h.TextSize               = 10
             h.TextColor3             = Color3.fromRGB(80, 200, 255)
-            h.TextXAlignment         = Enum.TextXAlignment.Left
+            h.TextXAlignment        = Enum.TextXAlignment.Center
             h.LayoutOrder            = nextOrder()
             h.Parent                 = scrollArea
             addMember(h, LINE_H)
@@ -3400,7 +3400,7 @@ function Window:InfoPanel(cfg)
             addMember(row, LINE_H)
 
             local lbl = Instance.new("TextLabel")
-            lbl.Size                   = UDim2.new(0.55, 0, 1, 0)
+            lbl.Size                   = UDim2.new(0.38, 0, 1, 0)
             lbl.BackgroundTransparency = 1
             lbl.Text                   = tostring(label)
             lbl.Font                   = Enum.Font.Gotham
@@ -3411,8 +3411,8 @@ function Window:InfoPanel(cfg)
             lbl.Parent                 = row
 
             local val = Instance.new("TextLabel")
-            val.Size                   = UDim2.new(0.45, 0, 1, 0)
-            val.Position               = UDim2.new(0.55, 0, 0, 0)
+            val.Size                   = UDim2.new(0.62, 0, 1, 0)
+            val.Position               = UDim2.new(0.38, 0, 0, 0)
             val.BackgroundTransparency = 1
             val.Text                   = tostring(initVal or "—")
             val.Font                   = Enum.Font.GothamBold
