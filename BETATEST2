@@ -2592,7 +2592,7 @@ function LuluUI.new(cfg)
         descText.Size                = UDim2.new(0, 220, 0, 25)
         descText.Position            = UDim2.new(0, -230, 0, 62)  -- offscreen kiri
         descText.BackgroundTransparency = 1
-        descText.Text                = "BeautifulBETA UI v1.3"
+        descText.Text                = "Beautiful UI v1.1"
         descText.Font                = Enum.Font.Gotham
         descText.TextSize            = 14
         descText.TextColor3          = Color3.fromRGB(220, 220, 220)
@@ -3286,7 +3286,7 @@ function Window:InfoPanel(cfg)
     scrollArea.BorderSizePixel        = 0
     scrollArea.ScrollBarThickness     = 3
     scrollArea.ScrollBarImageColor3   = Color3.fromRGB(80, 120, 200)
-    scrollArea.AutomaticCanvasSize    = Enum.AutomaticCanvasSize.Y
+    scrollArea.AutomaticCanvasSize = Enum.AutomaticSize.Y
     scrollArea.CanvasSize             = UDim2.new(0, 0, 0, 0)
     scrollArea.ClipsDescendants       = true
     scrollArea.Parent                 = panel
