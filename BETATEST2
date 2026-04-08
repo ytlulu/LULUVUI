@@ -438,6 +438,30 @@ local function _mkBtn(parent, text, yOff, h, col, theme, opts, depth)
         }):Play()
     end)
 
+    -- Locked: overlay transparan yang absorb semua klik + ikon 🔒
+    if opts.locked then
+        b.BackgroundColor3       = theme.accordionTxt
+        b.BackgroundTransparency = 0.3
+        stroke.Color             = theme.accordionTxt
+        b.AutoButtonColor        = false
+
+        local ov = Instance.new("TextButton", b)
+        ov.Size                   = UDim2.new(1, 0, 1, 0)
+        ov.BackgroundTransparency = 1
+        ov.BorderSizePixel        = 0
+        ov.Text                   = "🔒"
+        ov.Font                   = Enum.Font.GothamBold
+        ov.TextSize               = 11
+        ov.TextColor3             = theme.textWhite
+        ov.TextXAlignment         = Enum.TextXAlignment.Right
+        ov.Active                 = true
+        ov.AutoButtonColor        = false
+        ov.ZIndex                 = b.ZIndex + 5
+        ov.MouseButton1Click:Connect(function() end)  -- absorb klik
+        local ovPad = Instance.new("UIPadding", ov)
+        ovPad.PaddingRight = UDim.new(0, 6)
+    end
+
     return b, h or 26
 end
 
@@ -495,6 +519,7 @@ end
 -- Toggle switch
 -- opts.subtext  → string, kalau ada maka tinggi 48px dan ada subtext di bawah label
 -- opts.disabled → bool, kalau true: greyed out, tidak bisa diklik
+-- opts.locked   → bool, sama seperti disabled tapi tampilkan 🔒 di track
 local function _mkToggle(parent, label, yOff, default, callback, theme, opts, depth)
     opts = opts or {}
     depth = depth or 0
@@ -502,7 +527,8 @@ local function _mkToggle(parent, label, yOff, default, callback, theme, opts, de
     local MR = 8
     local prefix = depth > 0 and " " or ""
     local subtext  = opts.subtext
-    local disabled = opts.disabled == true
+    local locked   = opts.locked == true
+    local disabled = opts.disabled == true or locked  -- locked implies disabled
     local totalH   = subtext and 48 or 28
 
     local state = {default}
@@ -589,6 +615,20 @@ local function _mkToggle(parent, label, yOff, default, callback, theme, opts, de
             }):Play()
             if callback then callback(on) end
         end)
+    end
+
+    -- Ikon 🔒 di atas track kalau locked
+    if locked then
+        local lockLbl = Instance.new("TextLabel", bg)
+        lockLbl.Size                   = UDim2.new(0, 38, 0, 20)
+        lockLbl.Position               = UDim2.new(1, -46, 0.5, -10)
+        lockLbl.BackgroundTransparency = 1
+        lockLbl.Text                   = "🔒"
+        lockLbl.Font                   = Enum.Font.GothamBold
+        lockLbl.TextSize               = 13
+        lockLbl.TextXAlignment         = Enum.TextXAlignment.Center
+        lockLbl.ZIndex                 = track.ZIndex + 2
+        lockLbl.Parent                 = bg
     end
 
     return bg, totalH
@@ -871,11 +911,9 @@ local function _mkMultiDropdown(parent, mainFrame, label, options, defaults, yOf
     mkCorner(valBtn, 6)
 
     local itemH   = 30
-    local maxShow = math.min(#options, 6)
-    local menuH   = maxShow * itemH + 4
+    local menuH   = 0  -- diupdate di buildRows
 
     local dropMenu = Instance.new("Frame")
-    dropMenu.Size = UDim2.new(0, 150, 0, menuH)
     dropMenu.BackgroundColor3 = theme.textWhite
     dropMenu.BorderSizePixel = 0
     dropMenu.Visible = false
@@ -897,7 +935,7 @@ local function _mkMultiDropdown(parent, mainFrame, label, options, defaults, yOf
     -- ScrollingFrame supaya kalau opsi banyak bisa scroll
     local scroll = Instance.new("ScrollingFrame")
     scroll.Size = UDim2.new(1, 0, 1, 0)
-    scroll.CanvasSize = UDim2.new(0, 0, 0, #options * itemH)
+    scroll.CanvasSize = UDim2.new(0, 0, 0, 0)
     scroll.BackgroundTransparency = 1
     scroll.BorderSizePixel = 0
     scroll.ScrollBarThickness = 3
@@ -909,96 +947,113 @@ local function _mkMultiDropdown(parent, mainFrame, label, options, defaults, yOf
 
     local function refreshRow(opt, row, check)
         local on = selected[opt] == true
-        -- Row background: transparan kalau tidak dipilih, sedikit biru kalau dipilih
         row.BackgroundTransparency = on and 0 or 1
         row.BackgroundColor3       = on and Color3.fromRGB(230, 242, 255) or theme.textWhite
-        -- Kotak checkbox: biru (accent) kalau dipilih, abu-abu kalau tidak
         check.BackgroundColor3 = on and theme.accent or theme.contentBg
         check.Text             = on and "✓" or ""
         check.TextColor3       = on and theme.textWhite or theme.accordionTxt
     end
 
-    for i, opt in ipairs(options) do
-        local isOn = selected[opt] == true
-        local row = Instance.new("TextButton")
-        row.Size = UDim2.new(1, 0, 0, itemH)
-        row.Position = UDim2.new(0, 0, 0, (i - 1) * itemH)
-        row.BackgroundColor3      = isOn and Color3.fromRGB(230, 242, 255) or theme.textWhite
-        row.BackgroundTransparency = isOn and 0 or 1
-        row.BorderSizePixel = 0
-        row.Text = ""
-        row.ZIndex = 202
-        row.Parent = scroll
-        mkCorner(row, 0)
+    -- Bangun ulang semua row item (dipanggil saat init + SetOptions)
+    local function buildRows(opts)
+        -- Hapus row lama
+        for _, child in ipairs(scroll:GetChildren()) do
+            child:Destroy()
+        end
+        itemRows = {}
 
-        -- Hover effect (hanya saat tidak dipilih)
-        row.MouseEnter:Connect(function()
-            if not selected[opt] then
-                TweenService:Create(row, TweenInfo.new(0.1), {
-                    BackgroundColor3 = Color3.fromRGB(245, 248, 255),
-                    BackgroundTransparency = 0
-                }):Play()
-            end
-        end)
-        row.MouseLeave:Connect(function()
-            if not selected[opt] then
-                TweenService:Create(row, TweenInfo.new(0.1), {
-                    BackgroundTransparency = 1
-                }):Play()
-            end
-        end)
+        -- Bersihkan selected yang tidak ada di opsi baru
+        local optSet = {}
+        for _, v in ipairs(opts) do optSet[v] = true end
+        for k in pairs(selected) do
+            if not optSet[k] then selected[k] = nil end
+        end
 
-        -- Checkmark box
-        local check = Instance.new("TextLabel")
-        check.Size = UDim2.new(0, 18, 0, 18)
-        check.Position = UDim2.new(0, 7, 0.5, -9)
-        check.BackgroundColor3 = isOn and theme.accent or theme.contentBg
-        check.BorderSizePixel = 0
-        check.Text             = isOn and "✓" or ""
-        check.Font = Enum.Font.GothamBold
-        check.TextSize = 11
-        check.TextColor3       = isOn and theme.textWhite or theme.accordionTxt
-        check.TextXAlignment = Enum.TextXAlignment.Center
-        check.ZIndex = 203
-        check.Parent = row
-        mkCorner(check, 4)
+        -- Update ukuran menu
+        local maxShow = math.min(#opts, 6)
+        menuH = maxShow * itemH + 4
+        scroll.CanvasSize = UDim2.new(0, 0, 0, #opts * itemH)
 
-        -- Nama opsi
-        local optLbl = Instance.new("TextLabel")
-        optLbl.Size = UDim2.new(1, -34, 1, 0)
-        optLbl.Position = UDim2.new(0, 32, 0, 0)
-        optLbl.BackgroundTransparency = 1
-        optLbl.Text = opt
-        optLbl.Font = Enum.Font.Gotham
-        optLbl.TextSize = 12
-        optLbl.TextColor3 = theme.text
-        optLbl.TextXAlignment = Enum.TextXAlignment.Left
-        optLbl.ZIndex = 203
-        optLbl.Parent = row
+        for i, opt in ipairs(opts) do
+            local isOn = selected[opt] == true
+            local row = Instance.new("TextButton")
+            row.Size = UDim2.new(1, 0, 0, itemH)
+            row.Position = UDim2.new(0, 0, 0, (i - 1) * itemH)
+            row.BackgroundColor3      = isOn and Color3.fromRGB(230, 242, 255) or theme.textWhite
+            row.BackgroundTransparency = isOn and 0 or 1
+            row.BorderSizePixel = 0
+            row.Text = ""
+            row.ZIndex = 202
+            row.Parent = scroll
+            mkCorner(row, 0)
 
-        table.insert(itemRows, {opt = opt, row = row, check = check})
+            row.MouseEnter:Connect(function()
+                if not selected[opt] then
+                    TweenService:Create(row, TweenInfo.new(0.1), {
+                        BackgroundColor3 = Color3.fromRGB(245, 248, 255),
+                        BackgroundTransparency = 0
+                    }):Play()
+                end
+            end)
+            row.MouseLeave:Connect(function()
+                if not selected[opt] then
+                    TweenService:Create(row, TweenInfo.new(0.1), {
+                        BackgroundTransparency = 1
+                    }):Play()
+                end
+            end)
 
-        row.MouseButton1Click:Connect(function()
-            -- Toggle
-            if selected[opt] then
-                selected[opt] = nil
-            else
-                selected[opt] = true
-            end
-            -- Refresh semua row (biar konsisten)
-            for _, r in ipairs(itemRows) do
-                refreshRow(r.opt, r.row, r.check)
-            end
-            -- Update label tombol
-            valBtn.Text = getLabel()
-            -- Kirim tabel hasil ke callback
-            if callback then
-                local result = {}
-                for k in pairs(selected) do table.insert(result, k) end
-                callback(result)
-            end
-        end)
+            local check = Instance.new("TextLabel")
+            check.Size = UDim2.new(0, 18, 0, 18)
+            check.Position = UDim2.new(0, 7, 0.5, -9)
+            check.BackgroundColor3 = isOn and theme.accent or theme.contentBg
+            check.BorderSizePixel = 0
+            check.Text             = isOn and "✓" or ""
+            check.Font = Enum.Font.GothamBold
+            check.TextSize = 11
+            check.TextColor3       = isOn and theme.textWhite or theme.accordionTxt
+            check.TextXAlignment = Enum.TextXAlignment.Center
+            check.ZIndex = 203
+            check.Parent = row
+            mkCorner(check, 4)
+
+            local optLbl = Instance.new("TextLabel")
+            optLbl.Size = UDim2.new(1, -34, 1, 0)
+            optLbl.Position = UDim2.new(0, 32, 0, 0)
+            optLbl.BackgroundTransparency = 1
+            optLbl.Text = opt
+            optLbl.Font = Enum.Font.Gotham
+            optLbl.TextSize = 12
+            optLbl.TextColor3 = theme.text
+            optLbl.TextXAlignment = Enum.TextXAlignment.Left
+            optLbl.ZIndex = 203
+            optLbl.Parent = row
+
+            table.insert(itemRows, {opt = opt, row = row, check = check})
+
+            row.MouseButton1Click:Connect(function()
+                if selected[opt] then
+                    selected[opt] = nil
+                else
+                    selected[opt] = true
+                end
+                for _, r in ipairs(itemRows) do
+                    refreshRow(r.opt, r.row, r.check)
+                end
+                valBtn.Text = getLabel()
+                if callback then
+                    local result = {}
+                    for k in pairs(selected) do table.insert(result, k) end
+                    callback(result)
+                end
+            end)
+        end
+
+        valBtn.Text = getLabel()
     end
+
+    -- Build awal
+    buildRows(options)
 
     -- Open / close menu
     local trackConnM = nil  -- RenderStepped connection untuk tracking posisi
@@ -1068,7 +1123,16 @@ local function _mkMultiDropdown(parent, mainFrame, label, options, defaults, yOf
         end
     end)
 
-    return bg, 28
+    -- Proxy: SetOptions rebuild semua row dengan opsi baru
+    local proxy = {}
+    function proxy:SetOptions(newOpts)
+        buildRows(newOpts)
+        if open[1] and dropMenu.Visible then
+            dropMenu.Size = UDim2.new(0, math.max(valBtn.AbsoluteSize.X, 150), 0, menuH)
+        end
+    end
+
+    return bg, 28, proxy
 end
 
 -- ============================================================
@@ -1987,8 +2051,9 @@ end
 -- callback(selectedTable) dipanggil tiap pilihan berubah
 function Section:MultiDropdown(label, options, defaults, callback, opts)
     opts = opts or {}
-    _mkMultiDropdown(self._c, self._mf, label, options, defaults, self._y, callback, self._t, self._cl, self._depth)
+    local _, _, proxy = _mkMultiDropdown(self._c, self._mf, label, options, defaults, self._y, callback, self._t, self._cl, self._depth)
     self._y = self._y + 28 + (opts.gap or DEFAULT_GAP)
+    return proxy
 end
 
 function Section:NumberInput(label, default, step, minVal, maxVal, callback, opts)
