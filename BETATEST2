@@ -2273,14 +2273,15 @@ function Section:Accordion(title, stateKeyOrFn, builderFnOrOpts, opts)
             ov.MouseButton1Click:Connect(function() end)
 
             local ic = Instance.new("TextLabel")
-            ic.Size                   = UDim2.new(0, 40, 1, 0)
-            ic.Position               = UDim2.new(1, -44, 0, 0)
+            ic.Size = UDim2.new(0, 0, 1, 0)
+            ic.Position = UDim2.new(1, -ic.AbsoluteSize.X - 8, 0, 0)
+            ic.AutomaticSize = Enum.AutomaticSize.X
             ic.BackgroundTransparency = 1
             ic.Text                   ="🖤 Feature locked"
             ic.Font                   = Enum.Font.GothamBold
             ic.TextSize               = 13
             ic.TextColor3             = Color3.fromRGB(255, 255, 255)
-            ic.TextXAlignment         = Enum.TextXAlignment.Center
+            ic.TextXAlignment = Enum.TextXAlignment.Right
             ic.ZIndex                 = 61
             ic.Parent                 = ov
         end
