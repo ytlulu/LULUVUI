@@ -1,6 +1,10 @@
 -- ============================================================
---   LuluUI Library v1.3.1
+--   LuluUI Library v1.3.3
 --   Usage: local LuluUI = loadstring(game:HttpGet("URL"))()
+--   Changelog v1.3.3:
+--     + Dropdown & MultiDropdown: Search box di atas list
+--     + Resize handle: indikator visual ↘ lebih jelas
+--     + Dropdown: ukuran menu reaktif terhadap hasil search
 -- ============================================================
 
 local LuluUI = {}
@@ -634,7 +638,7 @@ local function _mkToggle(parent, label, yOff, default, callback, theme, opts, de
     return bg, totalH
 end
 
--- Dropdown
+-- Dropdown (v1.3.3: + search box)
 -- Return: bg, 32, proxy
 -- proxy:SetOptions(newOpts, keepValue?)  → update opsi tanpa rebuild widget
 -- proxy:SetValue(text)                  → set label tombol secara manual
@@ -683,7 +687,8 @@ local function _mkDropdown(parent, mainFrame, label, options, default, yOff, cal
     mkCorner(valBtn, 6)
 
     local ITEM_H   = 28
-    local MAX_SHOW = 6   -- maksimal item visible sebelum scroll
+    local SEARCH_H = 28      -- tinggi search bar
+    local MAX_SHOW = 5        -- maksimal item visible sebelum scroll
 
     -- Wrapper frame (background + shadow + clip)
     local dropMenu = Instance.new("Frame")
@@ -705,31 +710,81 @@ local function _mkDropdown(parent, mainFrame, label, options, default, yOff, cal
     ds.Parent                 = dropMenu
     mkCorner(ds, 10)
 
-    -- ScrollingFrame di dalam dropMenu
+    -- ── Search bar di dalam dropMenu ────────────────────────────
+    local searchBg = Instance.new("Frame")
+    searchBg.Size             = UDim2.new(1, 0, 0, SEARCH_H)
+    searchBg.Position         = UDim2.new(0, 0, 0, 0)
+    searchBg.BackgroundColor3 = theme.accordionBg
+    searchBg.BorderSizePixel  = 0
+    searchBg.ZIndex           = 202
+    searchBg.Parent           = dropMenu
+
+    -- Garis pemisah bawah search
+    local searchDiv = Instance.new("Frame")
+    searchDiv.Size             = UDim2.new(1, 0, 0, 1)
+    searchDiv.Position         = UDim2.new(0, 0, 1, -1)
+    searchDiv.BackgroundColor3 = theme.divider
+    searchDiv.BorderSizePixel  = 0
+    searchDiv.ZIndex           = 203
+    searchDiv.Parent           = searchBg
+
+    local searchBox = Instance.new("TextBox")
+    searchBox.Size             = UDim2.new(1, -10, 0, 18)
+    searchBox.Position         = UDim2.new(0, 5, 0.5, -9)
+    searchBox.BackgroundColor3 = theme.contentBg
+    searchBox.BorderSizePixel  = 0
+    searchBox.PlaceholderText  = "🔍 Cari..."
+    searchBox.PlaceholderColor3 = theme.textLight
+    searchBox.Text             = ""
+    searchBox.Font             = Enum.Font.Gotham
+    searchBox.TextSize         = 10
+    searchBox.TextColor3       = theme.text
+    searchBox.TextXAlignment   = Enum.TextXAlignment.Left
+    searchBox.ClearTextOnFocus = false
+    searchBox.ZIndex           = 203
+    searchBox.Parent           = searchBg
+    mkCorner(searchBox, 4)
+    local sbPad = Instance.new("UIPadding", searchBox)
+    sbPad.PaddingLeft = UDim.new(0, 6)
+
+    -- ── ScrollingFrame di bawah search ──────────────────────────
     local scroll = Instance.new("ScrollingFrame")
-    scroll.Size                  = UDim2.new(1, 0, 1, 0)
+    scroll.Size                  = UDim2.new(1, 0, 1, -SEARCH_H)
+    scroll.Position              = UDim2.new(0, 0, 0, SEARCH_H)
     scroll.BackgroundTransparency = 1
     scroll.BorderSizePixel        = 0
     scroll.ScrollBarThickness     = 4
     scroll.ScrollBarImageColor3   = theme.accent
-    scroll.CanvasSize             = UDim2.new(0, 0, 0, 0)   -- di-set ulang tiap rebuild
+    scroll.CanvasSize             = UDim2.new(0, 0, 0, 0)
     scroll.ZIndex                 = 201
     scroll.Parent                 = dropMenu
 
-    local trackConn = nil  -- RenderStepped connection untuk tracking posisi
+    local trackConn  = nil
+    local searchQuery = {""}       -- query aktif
+    local menuHRef    = {SEARCH_H} -- ref height menu (mutable, dipakai RenderStepped)
+
+    -- ── Filter helper ────────────────────────────────────────────
+    local function filterOpts(opts, q)
+        if not q or q == "" then return opts end
+        q = q:lower()
+        local res = {}
+        for _, opt in ipairs(opts) do
+            if opt:lower():find(q, 1, true) then
+                table.insert(res, opt)
+            end
+        end
+        return res
+    end
 
     --  closeMenu 
     local function closeMenu()
         if open[1] then
-            -- Stop position tracking
-            if trackConn then
-                trackConn:Disconnect()
-                trackConn = nil
-            end
+            if trackConn then trackConn:Disconnect(); trackConn = nil end
             dropMenu.Visible = false
             dropMenu.Parent  = nil
             open[1]          = false
-            -- restore open indicator
+            searchBox.Text   = ""
+            searchQuery[1]   = ""
             local cur = valBtn.Text:gsub("%s*%+$", ""):gsub("%s*%-$", "")
             valBtn.Text = cur .. " +"
         end
@@ -737,66 +792,74 @@ local function _mkDropdown(parent, mainFrame, label, options, default, yOff, cal
 
     if closers then table.insert(closers, closeMenu) end
 
-    --  rebuildMenu 
-    local function rebuildMenu(opts)
-        -- bersihkan item lama
+    -- ── rebuildMenu: render opsi yang sudah difilter ─────────────
+    local function rebuildMenu()
         for _, c in ipairs(scroll:GetChildren()) do c:Destroy() end
-
-        scroll.CanvasSize = UDim2.new(0, 0, 0, #opts * ITEM_H)
-
-        for i, opt in ipairs(opts) do
+        local filtered = filterOpts(currentOpts, searchQuery[1])
+        scroll.CanvasSize = UDim2.new(0, 0, 0, #filtered * ITEM_H)
+        -- Update tinggi menu sesuai hasil filter
+        local vis = math.min(#filtered, MAX_SHOW)
+        menuHRef[1] = SEARCH_H + vis * ITEM_H
+        if dropMenu.Parent then
+            dropMenu.Size = UDim2.new(0, dropMenu.Size.X.Offset, 0, menuHRef[1])
+        end
+        for i, opt in ipairs(filtered) do
             local ob = Instance.new("TextButton")
-            ob.Size                = UDim2.new(1, 0, 0, ITEM_H)
-            ob.Position            = UDim2.new(0, 0, 0, (i - 1) * ITEM_H)
+            ob.Size                   = UDim2.new(1, 0, 0, ITEM_H)
+            ob.Position               = UDim2.new(0, 0, 0, (i - 1) * ITEM_H)
             ob.BackgroundTransparency = 1
-            ob.Text                = opt
-            ob.Font                = Enum.Font.Gotham
-            ob.TextSize            = 12
-            ob.TextColor3          = theme.text
-            ob.ZIndex              = 202
-            ob.Parent              = scroll
+            ob.Text                   = opt
+            ob.Font                   = Enum.Font.Gotham
+            ob.TextSize               = 12
+            ob.TextColor3             = theme.text
+            ob.ZIndex                 = 202
+            ob.Parent                 = scroll
             makeHover(ob, theme.textWhite, Color3.fromRGB(235, 240, 255))
             ob.BackgroundTransparency = 1
             ob.MouseButton1Click:Connect(function()
-                closeMenu()                  -- nutup dulu (restore "+ "), lalu
-                valBtn.Text = opt .. " +"    -- overwrite dengan pilihan user
+                closeMenu()
+                valBtn.Text = opt .. " +"
                 if callback then callback(opt) end
             end)
         end
     end
 
-    rebuildMenu(currentOpts)
+    -- Search berubah → rebuild langsung
+    searchBox:GetPropertyChangedSignal("Text"):Connect(function()
+        searchQuery[1] = searchBox.Text
+        rebuildMenu()
+    end)
 
-    -- open/close menu
+    rebuildMenu()
+
+    -- ── openMenu ─────────────────────────────────────────────────
     local function openMenu()
-        local visibleItems = math.min(#currentOpts, MAX_SHOW)
-        local menuH        = visibleItems * ITEM_H
-        local absPos       = valBtn.AbsolutePosition
-        local framePos     = mainFrame.AbsolutePosition
-        local menuW        = valBtn.AbsoluteSize.X
-        dropMenu.Size      = UDim2.new(0, menuW, 0, menuH)
-        dropMenu.Position  = UDim2.new(
+        -- Reset search saat buka
+        searchBox.Text  = ""
+        searchQuery[1]  = ""
+        rebuildMenu()
+
+        local absPos  = valBtn.AbsolutePosition
+        local framePos = mainFrame.AbsolutePosition
+        local menuW   = valBtn.AbsoluteSize.X
+        dropMenu.Size = UDim2.new(0, menuW, 0, menuHRef[1])
+        dropMenu.Position = UDim2.new(
             0, absPos.X - framePos.X,
             0, absPos.Y - framePos.Y + valBtn.AbsoluteSize.Y + 4
         )
-        scroll.CanvasSize  = UDim2.new(0, 0, 0, #currentOpts * ITEM_H)
-        dropMenu.Parent    = mainFrame
-        dropMenu.Visible   = true
-        open[1]            = true
+        dropMenu.Parent  = mainFrame
+        dropMenu.Visible = true
+        open[1]          = true
         local cur = valBtn.Text:gsub("%s*%+$", ""):gsub("%s*%-$", "")
         valBtn.Text = cur .. " -"
 
-        -- Track posisi setiap frame agar dropdown selalu ngikut saat di-scroll
+        -- Track posisi + ukuran setiap frame
         trackConn = RunService.RenderStepped:Connect(function()
-            if not open[1] then
-                trackConn:Disconnect()
-                trackConn = nil
-                return
-            end
-            local ap  = valBtn.AbsolutePosition
-            local fp  = mainFrame.AbsolutePosition
-            local mW  = valBtn.AbsoluteSize.X
-            dropMenu.Size     = UDim2.new(0, mW, 0, menuH)
+            if not open[1] then trackConn:Disconnect(); trackConn = nil; return end
+            local ap = valBtn.AbsolutePosition
+            local fp = mainFrame.AbsolutePosition
+            local mW = valBtn.AbsoluteSize.X
+            dropMenu.Size     = UDim2.new(0, mW, 0, menuHRef[1])
             dropMenu.Position = UDim2.new(
                 0, ap.X - fp.X,
                 0, ap.Y - fp.Y + valBtn.AbsoluteSize.Y + 4
@@ -832,7 +895,7 @@ local function _mkDropdown(parent, mainFrame, label, options, default, yOff, cal
     function proxy:SetOptions(newOpts, keepValue)
         closeMenu()
         currentOpts = newOpts
-        rebuildMenu(newOpts)
+        rebuildMenu()
         if not keepValue then
             valBtn.Text = (newOpts[1] or "---") .. " +"
         end
@@ -845,7 +908,7 @@ local function _mkDropdown(parent, mainFrame, label, options, default, yOff, cal
     return bg, 28, proxy
 end
 
--- Multi-select Dropdown
+-- Multi-select Dropdown (v1.3.3: + search box)
 local function _mkMultiDropdown(parent, mainFrame, label, options, defaults, yOff, callback, theme, closers, depth)
     depth = depth or 0
     local ML     = 8 + depth * 10
@@ -910,8 +973,10 @@ local function _mkMultiDropdown(parent, mainFrame, label, options, defaults, yOf
     valBtn.Parent = bg
     mkCorner(valBtn, 6)
 
-    local itemH   = 30
-    local menuH   = 0  -- diupdate di buildRows
+    local itemH    = 30
+    local SEARCH_H = 28
+    local MAX_SHOW = 5
+    local menuHRef = {SEARCH_H}  -- mutable ref, dipakai RenderStepped
 
     local dropMenu = Instance.new("Frame")
     dropMenu.BackgroundColor3 = theme.textWhite
@@ -932,9 +997,46 @@ local function _mkMultiDropdown(parent, mainFrame, label, options, defaults, yOf
     ds.Parent = dropMenu
     mkCorner(ds, 10)
 
+    -- ── Search bar ───────────────────────────────────────────────
+    local searchBg = Instance.new("Frame")
+    searchBg.Size             = UDim2.new(1, 0, 0, SEARCH_H)
+    searchBg.Position         = UDim2.new(0, 0, 0, 0)
+    searchBg.BackgroundColor3 = theme.accordionBg
+    searchBg.BorderSizePixel  = 0
+    searchBg.ZIndex           = 202
+    searchBg.Parent           = dropMenu
+
+    local searchDiv = Instance.new("Frame")
+    searchDiv.Size             = UDim2.new(1, 0, 0, 1)
+    searchDiv.Position         = UDim2.new(0, 0, 1, -1)
+    searchDiv.BackgroundColor3 = theme.divider
+    searchDiv.BorderSizePixel  = 0
+    searchDiv.ZIndex           = 203
+    searchDiv.Parent           = searchBg
+
+    local searchBox = Instance.new("TextBox")
+    searchBox.Size             = UDim2.new(1, -10, 0, 18)
+    searchBox.Position         = UDim2.new(0, 5, 0.5, -9)
+    searchBox.BackgroundColor3 = theme.contentBg
+    searchBox.BorderSizePixel  = 0
+    searchBox.PlaceholderText  = "🔍 Cari..."
+    searchBox.PlaceholderColor3 = theme.textLight
+    searchBox.Text             = ""
+    searchBox.Font             = Enum.Font.Gotham
+    searchBox.TextSize         = 10
+    searchBox.TextColor3       = theme.text
+    searchBox.TextXAlignment   = Enum.TextXAlignment.Left
+    searchBox.ClearTextOnFocus = false
+    searchBox.ZIndex           = 203
+    searchBox.Parent           = searchBg
+    mkCorner(searchBox, 4)
+    local sbPad = Instance.new("UIPadding", searchBox)
+    sbPad.PaddingLeft = UDim.new(0, 6)
+
     -- ScrollingFrame supaya kalau opsi banyak bisa scroll
     local scroll = Instance.new("ScrollingFrame")
-    scroll.Size = UDim2.new(1, 0, 1, 0)
+    scroll.Size = UDim2.new(1, 0, 1, -SEARCH_H)
+    scroll.Position = UDim2.new(0, 0, 0, SEARCH_H)
     scroll.CanvasSize = UDim2.new(0, 0, 0, 0)
     scroll.BackgroundTransparency = 1
     scroll.BorderSizePixel = 0
@@ -943,7 +1045,22 @@ local function _mkMultiDropdown(parent, mainFrame, label, options, defaults, yOf
     scroll.ZIndex = 201
     scroll.Parent = dropMenu
 
-    local itemRows = {}  -- simpan tiap row buat refresh warna
+    local allOpts    = options   -- semua opsi asli (tidak terfilter)
+    local searchQuery = {""}     -- query aktif
+    local itemRows   = {}        -- baris yang dirender saat ini
+
+    -- ── Filter helper ────────────────────────────────────────────
+    local function filterOpts(q)
+        if not q or q == "" then return allOpts end
+        q = q:lower()
+        local res = {}
+        for _, opt in ipairs(allOpts) do
+            if opt:lower():find(q, 1, true) then
+                table.insert(res, opt)
+            end
+        end
+        return res
+    end
 
     local function refreshRow(opt, row, check)
         local on = selected[opt] == true
@@ -954,27 +1071,22 @@ local function _mkMultiDropdown(parent, mainFrame, label, options, defaults, yOf
         check.TextColor3       = on and theme.textWhite or theme.accordionTxt
     end
 
-    -- Bangun ulang semua row item (dipanggil saat init + SetOptions)
-    local function buildRows(opts)
-        -- Hapus row lama
-        for _, child in ipairs(scroll:GetChildren()) do
-            child:Destroy()
-        end
+    -- ── buildRows: render baris dari opsi terfilter ──────────────
+    local function buildRows()
+        for _, child in ipairs(scroll:GetChildren()) do child:Destroy() end
         itemRows = {}
 
-        -- Bersihkan selected yang tidak ada di opsi baru
-        local optSet = {}
-        for _, v in ipairs(opts) do optSet[v] = true end
-        for k in pairs(selected) do
-            if not optSet[k] then selected[k] = nil end
-        end
+        local filtered = filterOpts(searchQuery[1])
 
         -- Update ukuran menu
-        local maxShow = math.min(#opts, 6)
-        menuH = maxShow * itemH + 4
-        scroll.CanvasSize = UDim2.new(0, 0, 0, #opts * itemH)
+        local vis = math.min(#filtered, MAX_SHOW)
+        menuHRef[1] = SEARCH_H + vis * itemH + 4
+        scroll.CanvasSize = UDim2.new(0, 0, 0, #filtered * itemH)
+        if dropMenu.Parent then
+            dropMenu.Size = UDim2.new(0, dropMenu.Size.X.Offset, 0, menuHRef[1])
+        end
 
-        for i, opt in ipairs(opts) do
+        for i, opt in ipairs(filtered) do
             local isOn = selected[opt] == true
             local row = Instance.new("TextButton")
             row.Size = UDim2.new(1, 0, 0, itemH)
@@ -1052,27 +1164,30 @@ local function _mkMultiDropdown(parent, mainFrame, label, options, defaults, yOf
         valBtn.Text = getLabel()
     end
 
+    -- Search berubah → rebuild rows
+    searchBox:GetPropertyChangedSignal("Text"):Connect(function()
+        searchQuery[1] = searchBox.Text
+        buildRows()
+    end)
+
     -- Build awal
-    buildRows(options)
+    buildRows()
 
     -- Open / close menu
-    local trackConnM = nil  -- RenderStepped connection untuk tracking posisi
+    local trackConnM = nil
 
     local function closeMenu()
-        -- Stop position tracking
-        if trackConnM then
-            trackConnM:Disconnect()
-            trackConnM = nil
-        end
+        if trackConnM then trackConnM:Disconnect(); trackConnM = nil end
         dropMenu.Visible = false
         dropMenu.Parent = nil
         open[1] = false
+        searchBox.Text  = ""
+        searchQuery[1]  = ""
+        buildRows()
     end
 
-    -- Daftarkan ke closers supaya otomatis tutup saat pindah tab
     if closers then table.insert(closers, closeMenu) end
 
-    -- Tutup saat klik di luar dropMenu & valBtn
     UserInputService.InputBegan:Connect(function(input)
         if not open[1] then return end
         if input.UserInputType ~= Enum.UserInputType.MouseButton1
@@ -1093,26 +1208,26 @@ local function _mkMultiDropdown(parent, mainFrame, label, options, defaults, yOf
     valBtn.MouseButton1Click:Connect(function()
         open[1] = not open[1]
         if open[1] then
+            searchBox.Text  = ""
+            searchQuery[1]  = ""
+            buildRows()
             local absPos   = valBtn.AbsolutePosition
             local framePos = mainFrame.AbsolutePosition
-            local menuW    = math.max(valBtn.AbsoluteSize.X, 150)  -- min 150
-            dropMenu.Size  = UDim2.new(0, menuW, 0, menuH)
+            local menuW    = math.max(valBtn.AbsoluteSize.X, 150)
+            dropMenu.Size  = UDim2.new(0, menuW, 0, menuHRef[1])
             dropMenu.Position = UDim2.new(0, absPos.X - framePos.X, 0,
                 absPos.Y - framePos.Y + valBtn.AbsoluteSize.Y + 4)
             dropMenu.Parent = mainFrame
             dropMenu.Visible = true
 
-            -- Track posisi setiap frame agar dropdown selalu ngikut saat di-scroll
             trackConnM = RunService.RenderStepped:Connect(function()
                 if not open[1] then
-                    trackConnM:Disconnect()
-                    trackConnM = nil
-                    return
+                    trackConnM:Disconnect(); trackConnM = nil; return
                 end
                 local ap  = valBtn.AbsolutePosition
                 local fp  = mainFrame.AbsolutePosition
                 local mW  = math.max(valBtn.AbsoluteSize.X, 150)
-                dropMenu.Size     = UDim2.new(0, mW, 0, menuH)
+                dropMenu.Size     = UDim2.new(0, mW, 0, menuHRef[1])
                 dropMenu.Position = UDim2.new(
                     0, ap.X - fp.X,
                     0, ap.Y - fp.Y + valBtn.AbsoluteSize.Y + 4
@@ -1126,9 +1241,16 @@ local function _mkMultiDropdown(parent, mainFrame, label, options, defaults, yOf
     -- Proxy: SetOptions rebuild semua row dengan opsi baru
     local proxy = {}
     function proxy:SetOptions(newOpts)
-        buildRows(newOpts)
+        allOpts = newOpts
+        -- Bersihkan selected yang tidak ada di opsi baru
+        local optSet = {}
+        for _, v in ipairs(newOpts) do optSet[v] = true end
+        for k in pairs(selected) do
+            if not optSet[k] then selected[k] = nil end
+        end
+        buildRows()
         if open[1] and dropMenu.Visible then
-            dropMenu.Size = UDim2.new(0, math.max(valBtn.AbsoluteSize.X, 150), 0, menuH)
+            dropMenu.Size = UDim2.new(0, math.max(valBtn.AbsoluteSize.X, 150), 0, menuHRef[1])
         end
     end
 
@@ -2513,16 +2635,41 @@ function LuluUI.new(cfg)
     container.Parent = rightPanel
     self.container = container
 
-    --  Resize Handle 
+    --  Resize Handle — sudut kanan bawah, ikon ↘ 
     local resizeHandle = Instance.new("Frame")
-    resizeHandle.Size = UDim2.new(0, 14, 0, 14)
+    resizeHandle.Size = UDim2.new(0, 18, 0, 18)
     resizeHandle.AnchorPoint = Vector2.new(1, 1)
-    resizeHandle.Position = UDim2.new(1, -4, 1, -4)
+    resizeHandle.Position = UDim2.new(1, -3, 1, -3)
     resizeHandle.BackgroundColor3 = theme.accent
-    resizeHandle.BackgroundTransparency = 0.4
+    resizeHandle.BackgroundTransparency = 0.35
     resizeHandle.BorderSizePixel = 0
+    resizeHandle.ZIndex = 10
     resizeHandle.Parent = mainFrame
     mkCorner(resizeHandle, 4)
+
+    -- Ikon resize
+    local resizeIcon = Instance.new("TextLabel")
+    resizeIcon.Size = UDim2.new(1, 0, 1, 0)
+    resizeIcon.BackgroundTransparency = 1
+    resizeIcon.Text = "↘"
+    resizeIcon.Font = Enum.Font.GothamBold
+    resizeIcon.TextSize = 10
+    resizeIcon.TextColor3 = theme.textWhite
+    resizeIcon.TextXAlignment = Enum.TextXAlignment.Center
+    resizeIcon.ZIndex = 11
+    resizeIcon.Parent = resizeHandle
+
+    -- Hover: lebih terang
+    resizeHandle.MouseEnter:Connect(function()
+        TweenService:Create(resizeHandle, TweenInfo.new(0.12), {
+            BackgroundTransparency = 0
+        }):Play()
+    end)
+    resizeHandle.MouseLeave:Connect(function()
+        TweenService:Create(resizeHandle, TweenInfo.new(0.12), {
+            BackgroundTransparency = 0.35
+        }):Play()
+    end)
 
     -- Tab state
     self._tabs      = {}
@@ -2685,7 +2832,7 @@ function LuluUI.new(cfg)
         descText.Size                = UDim2.new(0, 220, 0, 25)
         descText.Position            = UDim2.new(0, -230, 0, 62)  -- offscreen kiri
         descText.BackgroundTransparency = 1
-        descText.Text                = "Beautiful UI v1.3.1Update Ui Visual]"
+        descText.Text                = "Beautiful UI v1.3.3 [Search + Resize]"
         descText.Font                = Enum.Font.Gotham
         descText.TextSize            = 14
         descText.TextColor3          = Color3.fromRGB(220, 220, 220)
