@@ -1,6 +1,12 @@
 -- ============================================================
---   LuluUI Library v1.3.3
+--   LuluUI Library v1.3.4
 --   Usage: local LuluUI = loadstring(game:HttpGet("URL"))()
+--   Changelog v1.3.4:
+--     Fix: UserInputService.InputBegan leak di Dropdown & MultiDropdown
+--          Sebelumnya: koneksi permanent per instance (tidak pernah disconnect)
+--          Sekarang: connect saat menu buka, disconnect saat menu tutup
+--     Fix: MultiDropdown proxy tambah SetSelected(items) & GetSelected()
+--          SetSelected dipakai di LuluXGAG untuk restore boost selection
 --   Changelog v1.3.3:
 --     + Dropdown & MultiDropdown: Search box di atas list
 --     + Resize handle: indikator visual ↘ lebih jelas
@@ -759,7 +765,8 @@ local function _mkDropdown(parent, mainFrame, label, options, default, yOff, cal
     scroll.ZIndex                 = 201
     scroll.Parent                 = dropMenu
 
-    local trackConn  = nil
+    local trackConn   = nil
+    local inputConn   = nil        -- Fix: disconnect saat close, bukan permanent
     local searchQuery = {""}       -- query aktif
     local menuHRef    = {SEARCH_H} -- ref height menu (mutable, dipakai RenderStepped)
 
@@ -780,6 +787,7 @@ local function _mkDropdown(parent, mainFrame, label, options, default, yOff, cal
     local function closeMenu()
         if open[1] then
             if trackConn then trackConn:Disconnect(); trackConn = nil end
+            if inputConn then inputConn:Disconnect(); inputConn = nil end  -- Fix leak
             dropMenu.Visible = false
             dropMenu.Parent  = nil
             open[1]          = false
@@ -865,28 +873,28 @@ local function _mkDropdown(parent, mainFrame, label, options, default, yOff, cal
                 0, ap.Y - fp.Y + valBtn.AbsoluteSize.Y + 4
             )
         end)
+
+        -- Fix: connect saat buka, disconnect saat tutup (bukan permanent)
+        inputConn = UserInputService.InputBegan:Connect(function(input)
+            if not open[1] then return end
+            if input.UserInputType ~= Enum.UserInputType.MouseButton1
+            and input.UserInputType ~= Enum.UserInputType.Touch then return end
+            local pos = input.Position
+            local function isInside(gui)
+                if not gui or not gui.Visible then return false end
+                local ap = gui.AbsolutePosition
+                local as = gui.AbsoluteSize
+                return pos.X >= ap.X and pos.X <= ap.X + as.X
+                   and pos.Y >= ap.Y and pos.Y <= ap.Y + as.Y
+            end
+            if not isInside(dropMenu) and not isInside(valBtn) then
+                closeMenu()
+            end
+        end)
     end
 
     valBtn.MouseButton1Click:Connect(function()
         if open[1] then closeMenu() else openMenu() end
-    end)
-
-    -- click outside: tutup saat klik di luar dropMenu & valBtn
-    UserInputService.InputBegan:Connect(function(input)
-        if not open[1] then return end
-        if input.UserInputType ~= Enum.UserInputType.MouseButton1
-        and input.UserInputType ~= Enum.UserInputType.Touch then return end
-        local pos = input.Position
-        local function isInside(gui)
-            if not gui or not gui.Visible then return false end
-            local ap = gui.AbsolutePosition
-            local as = gui.AbsoluteSize
-            return pos.X >= ap.X and pos.X <= ap.X + as.X
-               and pos.Y >= ap.Y and pos.Y <= ap.Y + as.Y
-        end
-        if not isInside(dropMenu) and not isInside(valBtn) then
-            closeMenu()
-        end
     end)
 
     --  Proxy API 
@@ -1175,9 +1183,11 @@ local function _mkMultiDropdown(parent, mainFrame, label, options, defaults, yOf
 
     -- Open / close menu
     local trackConnM = nil
+    local inputConnM = nil   -- Fix: disconnect saat close, bukan permanent
 
     local function closeMenu()
         if trackConnM then trackConnM:Disconnect(); trackConnM = nil end
+        if inputConnM then inputConnM:Disconnect(); inputConnM = nil end  -- Fix leak
         dropMenu.Visible = false
         dropMenu.Parent = nil
         open[1] = false
@@ -1187,23 +1197,6 @@ local function _mkMultiDropdown(parent, mainFrame, label, options, defaults, yOf
     end
 
     if closers then table.insert(closers, closeMenu) end
-
-    UserInputService.InputBegan:Connect(function(input)
-        if not open[1] then return end
-        if input.UserInputType ~= Enum.UserInputType.MouseButton1
-        and input.UserInputType ~= Enum.UserInputType.Touch then return end
-        local pos = input.Position
-        local function isInside(gui)
-            if not gui or not gui.Visible then return false end
-            local ap = gui.AbsolutePosition
-            local as = gui.AbsoluteSize
-            return pos.X >= ap.X and pos.X <= ap.X + as.X
-               and pos.Y >= ap.Y and pos.Y <= ap.Y + as.Y
-        end
-        if not isInside(dropMenu) and not isInside(valBtn) then
-            closeMenu()
-        end
-    end)
 
     valBtn.MouseButton1Click:Connect(function()
         open[1] = not open[1]
@@ -1233,6 +1226,24 @@ local function _mkMultiDropdown(parent, mainFrame, label, options, defaults, yOf
                     0, ap.Y - fp.Y + valBtn.AbsoluteSize.Y + 4
                 )
             end)
+
+            -- Fix: connect saat buka, disconnect saat tutup (bukan permanent)
+            inputConnM = UserInputService.InputBegan:Connect(function(input)
+                if not open[1] then return end
+                if input.UserInputType ~= Enum.UserInputType.MouseButton1
+                and input.UserInputType ~= Enum.UserInputType.Touch then return end
+                local pos = input.Position
+                local function isInside(gui)
+                    if not gui or not gui.Visible then return false end
+                    local ap = gui.AbsolutePosition
+                    local as = gui.AbsoluteSize
+                    return pos.X >= ap.X and pos.X <= ap.X + as.X
+                       and pos.Y >= ap.Y and pos.Y <= ap.Y + as.Y
+                end
+                if not isInside(dropMenu) and not isInside(valBtn) then
+                    closeMenu()
+                end
+            end)
         else
             closeMenu()
         end
@@ -1252,6 +1263,21 @@ local function _mkMultiDropdown(parent, mainFrame, label, options, defaults, yOf
         if open[1] and dropMenu.Visible then
             dropMenu.Size = UDim2.new(0, math.max(valBtn.AbsoluteSize.X, 150), 0, menuHRef[1])
         end
+    end
+
+    -- Fix: SetSelected → set pilihan aktif secara programatik
+    function proxy:SetSelected(items)
+        selected = {}
+        for _, v in ipairs(items) do selected[v] = true end
+        buildRows()
+        valBtn.Text = getLabel()
+    end
+
+    -- GetSelected → return list string yang dipilih saat ini
+    function proxy:GetSelected()
+        local result = {}
+        for k in pairs(selected) do table.insert(result, k) end
+        return result
     end
 
     return bg, 28, proxy
